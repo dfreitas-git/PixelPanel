@@ -23,10 +23,12 @@ dlf  9/22/2026
 #include <WiFi.h>
 #include "PanelRadio.h"
 #include "PixelOutput.h"
+#include "TestPanel.h"
 
 PanelRadio panelRadio;
 PixelFramebuffer framebuffer;
 PixelOutput pixelOutput;
+TestPanel testPanel;
 
 constexpr uint8_t PANEL_MAC[6] = { 0x2C, 0xBC, 0xBB, 0x4B, 0x7C, 0x60 };
 
@@ -50,21 +52,47 @@ void setup()
         }
     }
 
-    // Testing framebuffer
-    Serial.println("Test setPixel");
-    framebuffer.clear();
-
-    framebuffer.setPixel(0,  0,  20, 0, 0);   // bottom-left red
-    framebuffer.setPixel(29, 0,  0, 20, 0);   // bottom-right green
-    framebuffer.setPixel(0, 29,  0, 0, 20);   // top-left blue
-    framebuffer.setPixel(29,29, 20,20,20);     // top-right white
-    
-    pixelOutput.show(framebuffer);
-
 }
 
 void loop()
 {
+
+    // Testing framebuffer
+    testPanel.corners(framebuffer);
+    pixelOutput.show(framebuffer);
+    delay(5000);
+
+    // row test
+    for(uint8_t row=0; row< PANEL_HEIGHT; row++) {
+        testPanel.rows(framebuffer,row);
+        pixelOutput.show(framebuffer);
+        delay(100);
+    }
+
+    // column test
+    for(uint8_t column=0; column< PANEL_HEIGHT; column++) {
+        testPanel.columns(framebuffer,column);
+        pixelOutput.show(framebuffer);
+        delay(100);
+    }
+
+    // Solid color for each of the rmt channels
+    testPanel.rmtBands(framebuffer);
+    pixelOutput.show(framebuffer);
+    delay(5000);
+
+    testPanel.colorTest(framebuffer, 32,0,0);
+    pixelOutput.show(framebuffer);
+    delay(5000);
+
+    for(uint8_t y=0; y< PANEL_HEIGHT; y++) {
+        for(uint8_t x=0; x< PANEL_WIDTH; x++) {
+            testPanel.pixel(framebuffer,x,y,0,32,0);
+            pixelOutput.show(framebuffer);
+            delay(5);
+        }
+    }
+
     /*
     // dlf  Need to fix this.  Right now the the ESP-NOW callback can asynchronously overwrite the packet while we are 
     // reading this.  Need to add a producer/consumer interface.  Probably adding a "getLatestPacket" or some such that
