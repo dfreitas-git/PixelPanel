@@ -62,6 +62,10 @@ void loop()
     pixelOutput.show(framebuffer);
     delay(5000);
 
+    testPanel.diagonals(framebuffer);
+    pixelOutput.show(framebuffer);
+    delay(5000);
+
     // row test
     for(uint8_t row=0; row< PANEL_HEIGHT; row++) {
         testPanel.rows(framebuffer,row);
@@ -70,7 +74,7 @@ void loop()
     }
 
     // column test
-    for(uint8_t column=0; column< PANEL_HEIGHT; column++) {
+    for(uint8_t column=0; column< PANEL_WIDTH; column++) {
         testPanel.columns(framebuffer,column);
         pixelOutput.show(framebuffer);
         delay(100);
