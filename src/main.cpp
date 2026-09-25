@@ -24,17 +24,24 @@ dlf  9/22/2026
 #include "PanelRadio.h"
 #include "PixelOutput.h"
 #include "TestPanel.h"
+#include "Diffuser.h"
 
 PanelRadio panelRadio;
 PixelFramebuffer framebuffer;
 PixelOutput pixelOutput;
 TestPanel testPanel;
+Diffuser diffuser;
 
 constexpr uint8_t PANEL_MAC[6] = { 0x2C, 0xBC, 0xBB, 0x4B, 0x7C, 0x60 };
+constexpr uint16_t DIFFUSER_UPDATE_TIME = 100;  // ms between reading diffuser setting pot
+uint16_t lastDiffuserUpdate = 0;
 
 void setup()
 {
     Serial.begin(115200);
+
+    // Set up the diffuser servos
+    diffuser.begin();
 
     // Set up ESP-NOW
     if (!panelRadio.begin(PANEL_MAC)) {
@@ -56,6 +63,12 @@ void setup()
 
 void loop()
 {
+    // Manually setting diffuser distance via a potentiometer
+    uint32_t now = millis();
+    if(now-lastDiffuserUpdate > DIFFUSER_UPDATE_TIME) {
+        diffuser.sampleDiffuserPot();
+        lastDiffuserUpdate = now;
+    }
 
     // Testing framebuffer
     testPanel.corners(framebuffer);
