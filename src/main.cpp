@@ -28,6 +28,8 @@ dlf  9/22/2026
 #include "TestPanel.h"
 #include "Diffuser.h"
 #include "graphicsPrimitives.h"
+#include "graphicsParticles.h"
+#include "graphicsAnimations.h"
 
 PanelRadio panelRadio;
 PixelFramebuffer framebuffer;
@@ -35,6 +37,8 @@ PixelOutput pixelOutput;
 TestPanel testPanel;
 Diffuser diffuser;
 GraphicsPrimitives gPrim;
+GraphicsParticles gParticles;
+GraphicsAnimations gAnim;
 
 constexpr uint8_t PANEL_MAC[6] = { 0x2C, 0xBC, 0xBB, 0x4B, 0x7C, 0x60 };
 constexpr uint16_t DIFFUSER_UPDATE_TIME = 200;  // ms between reading diffuser setting pot
@@ -63,6 +67,10 @@ void setup()
         }
     }
 
+    gAnim.initShootingStars();
+    framebuffer.clear();
+    pixelOutput.show(framebuffer);
+
 }
 
 void loop()
@@ -79,7 +87,9 @@ void loop()
 
     palette c;
     RGB *bbuf = framebuffer.data();
-    framebuffer.clear();
+    gAnim.shootingStar(bbuf);
+    pixelOutput.show(framebuffer);
+    /*
     gPrim.drawTriangle(bbuf,{3,3},{20,15},{27,3},c.red);
     gPrim.drawTriangle(bbuf,{5,20},{10,29},{15,20},c.green);
     gPrim.drawLine(bbuf,0,15,29,15,1,c.blue);
@@ -98,6 +108,7 @@ void loop()
     gPrim.drawString(bbuf,"PINE", 2,15, c.green, c.black);
     pixelOutput.show(framebuffer);
     delay(2000);
+    */
 
     /*
     // dlf  Need to fix this.  Right now the the ESP-NOW callback can asynchronously overwrite the packet while we are 
