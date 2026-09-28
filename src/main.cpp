@@ -19,21 +19,25 @@ dlf  9/22/2026
 */
 
 #include <Arduino.h>
-
 #include <WiFi.h>
+
+#include "globals.h"
 #include "PanelRadio.h"
+#include "PixelFramebuffer.h"
 #include "PixelOutput.h"
 #include "TestPanel.h"
 #include "Diffuser.h"
+#include "graphicsPrimitives.h"
 
 PanelRadio panelRadio;
 PixelFramebuffer framebuffer;
 PixelOutput pixelOutput;
 TestPanel testPanel;
 Diffuser diffuser;
+GraphicsPrimitives gPrim;
 
 constexpr uint8_t PANEL_MAC[6] = { 0x2C, 0xBC, 0xBB, 0x4B, 0x7C, 0x60 };
-constexpr uint16_t DIFFUSER_UPDATE_TIME = 100;  // ms between reading diffuser setting pot
+constexpr uint16_t DIFFUSER_UPDATE_TIME = 200;  // ms between reading diffuser setting pot
 uint16_t lastDiffuserUpdate = 0;
 
 void setup()
@@ -71,44 +75,29 @@ void loop()
     }
 
     // Testing framebuffer
-    testPanel.corners(framebuffer);
+    //testPanel.runAllTests(pixelOutput, framebuffer);
+
+    palette c;
+    RGB *bbuf = framebuffer.data();
+    framebuffer.clear();
+    gPrim.drawTriangle(bbuf,{3,3},{20,15},{27,3},c.red);
+    gPrim.drawTriangle(bbuf,{5,20},{10,29},{15,20},c.green);
+    gPrim.drawLine(bbuf,0,15,29,15,1,c.blue);
+    gPrim.drawArc(bbuf,{1,20},{15,10},{28,25}, 1, c.limegreen);
+    gPrim.drawRect(bbuf,20,20,29,29,0,c.darkred);
+    gPrim.drawRect(bbuf,23,23,28,25,0,c.green);
+    gPrim.drawDiamond(bbuf,25,25,2,4,c.blue);
+    gPrim.drawEllipse(bbuf,12,5,6,3,0,c.blue);
+    gPrim.drawCircle(bbuf,5,25,3,c.blue);
     pixelOutput.show(framebuffer);
-    delay(5000);
+    delay(2000);
 
-    testPanel.diagonals(framebuffer);
+    framebuffer.clear();
+    gPrim.drawDiagonalBands(bbuf,0,1,2,1,29,c.red);
+    gPrim.drawDiagonalBands(bbuf,0,-1,2,2,29,c.blue);
+    gPrim.drawString(bbuf,"PINE", 2,15, c.green, c.black);
     pixelOutput.show(framebuffer);
-    delay(5000);
-
-    // row test
-    for(uint8_t row=0; row< PANEL_HEIGHT; row++) {
-        testPanel.rows(framebuffer,row);
-        pixelOutput.show(framebuffer);
-        delay(100);
-    }
-
-    // column test
-    for(uint8_t column=0; column< PANEL_WIDTH; column++) {
-        testPanel.columns(framebuffer,column);
-        pixelOutput.show(framebuffer);
-        delay(100);
-    }
-
-    // Solid color for each of the rmt channels
-    testPanel.rmtBands(framebuffer);
-    pixelOutput.show(framebuffer);
-    delay(5000);
-
-    testPanel.colorTest(framebuffer, 32,0,0);
-    pixelOutput.show(framebuffer);
-    delay(5000);
-
-    for(uint8_t y=0; y< PANEL_HEIGHT; y++) {
-        for(uint8_t x=0; x< PANEL_WIDTH; x++) {
-            testPanel.pixel(framebuffer,x,y,0,32,0);
-            pixelOutput.show(framebuffer);
-            delay(5);
-        }
-    }
+    delay(2000);
 
     /*
     // dlf  Need to fix this.  Right now the the ESP-NOW callback can asynchronously overwrite the packet while we are 

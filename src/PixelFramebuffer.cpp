@@ -48,3 +48,14 @@ RGB PixelFramebuffer::getPixel(int x, int y) const
 
     return pixels[y][x];
 }
+
+// Return pointer to the actual framebuffer for high-performance code that needs
+// to do lots of pixel writing
+RGB* PixelFramebuffer::data() {
+    return &pixels[0][0];
+}
+
+// Provide a read-only version
+const RGB* PixelFramebuffer::data() const {
+    return &pixels[0][0];
+}

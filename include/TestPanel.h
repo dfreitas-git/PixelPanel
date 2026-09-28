@@ -2,7 +2,9 @@
 #pragma once
 
 #include <Arduino.h>
+#include "TestPanel.h"
 #include "PixelFramebuffer.h"
+#include "PixelOutput.h"
 
 class TestPanel {
 public:
@@ -13,4 +15,5 @@ public:
     static void rmtBands(PixelFramebuffer &fb);
     static void colorTest(PixelFramebuffer &fb, uint8_t r, uint8_t g, uint8_t b);
     static void pixel(PixelFramebuffer &fb, uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b);
+    static void runAllTests(PixelOutput &po, PixelFramebuffer &fb);
 };
