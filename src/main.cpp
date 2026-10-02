@@ -29,6 +29,7 @@ dlf  9/22/2026
 #include "Diffuser.h"
 #include "graphicsPrimitives.h"
 #include "graphicsParticles.h"
+#include "graphicsComposites.h"
 #include "graphicsAnimations.h"
 
 PanelRadio panelRadio;
@@ -37,7 +38,8 @@ PixelOutput pixelOutput;
 TestPanel testPanel;
 Diffuser diffuser;
 GraphicsPrimitives gPrim;
-GraphicsParticles gParticles;
+GraphicsParticles gPart;
+GraphicsComposites gComp;
 GraphicsAnimations gAnim;
 
 constexpr uint8_t PANEL_MAC[6] = { 0x2C, 0xBC, 0xBB, 0x4B, 0x7C, 0x60 };
@@ -67,9 +69,9 @@ void setup()
         }
     }
 
-    gAnim.initShootingStars();
     framebuffer.clear();
     pixelOutput.show(framebuffer);
+    gAnim.initShootingStars();  // So we have something the first time through the loop
 
 }
 
@@ -87,8 +89,38 @@ void loop()
 
     palette c;
     RGB *bbuf = framebuffer.data();
-    gAnim.shootingStar(bbuf);
+    static int animCnt = 0;
+    static int sceneDisplayTime = 5000;
+    static uint32_t lastSceneSwitchTime = millis();
+    if(millis() - lastSceneSwitchTime > sceneDisplayTime) {
+        lastSceneSwitchTime = millis();
+
+        // star and rocket animations need to be init'ed
+        if(animCnt == 0) {
+            gAnim.initShootingStars();
+        }
+        if(animCnt == 1) {
+            gAnim.initRocket();
+        }
+        animCnt++;
+        if(animCnt == 9) {
+            animCnt = 0;
+        }
+    }
+
+    switch (animCnt) {
+        case 0: {gAnim.shootingStar(bbuf); break;}
+        case 1: {gAnim.fireworks(bbuf); break;}
+        case 2: {gAnim.checker(bbuf);  break;}
+        case 3: {gAnim.spiralD(bbuf); break;}
+        case 4: {gAnim.flower(bbuf);  break;}
+        case 5: {gAnim.eyeball(bbuf); break;}
+        case 6: {gAnim.pacman1(bbuf); break;}
+        case 7: {gAnim.pacman1(bbuf); break;}
+        case 8: {gAnim.flames(bbuf); break;}
+    }
     pixelOutput.show(framebuffer);
+
     /*
     gPrim.drawTriangle(bbuf,{3,3},{20,15},{27,3},c.red);
     gPrim.drawTriangle(bbuf,{5,20},{10,29},{15,20},c.green);
