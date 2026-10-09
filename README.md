@@ -1,7 +1,7 @@
 # PixelPanel
 PixelPanel : ESP32 code written in the Arduino PlatformIO IDE.
 
-### PixelPanelWand:  ESP32 code written in the Arduino PlatformIO IDE.
+### PixelPanel:  ESP32 code written in the Arduino PlatformIO IDE.
 
 The code controls a 30x30 ws2812 pixel array (made up of five strips of 180 LED's each).
 The pixels are addressed as row-0 at the bottom, row-29 at the top, column-0 at the left, 
