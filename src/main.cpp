@@ -42,7 +42,6 @@ GraphicsParticles gPart;
 GraphicsComposites gComp;
 GraphicsAnimations gAnim;
 
-constexpr uint8_t PANEL_MAC[6] = { 0x2C, 0xBC, 0xBB, 0x4B, 0x7C, 0x60 };
 constexpr uint16_t DIFFUSER_UPDATE_TIME = 200;  // ms between reading diffuser setting pot
 uint16_t lastDiffuserUpdate = 0;
 
@@ -142,12 +141,12 @@ void loop()
     delay(2000);
     */
 
+
     /*
     // dlf  Need to fix this.  Right now the the ESP-NOW callback can asynchronously overwrite the packet while we are 
     // reading this.  Need to add a producer/consumer interface.  Probably adding a "getLatestPacket" or some such that
     // returns the latest complete packet and tells the caller when a new one is ready.
     const WandPacket &packet = panelRadio.getPacket();
-
     Serial.print("magic: ");Serial.println(packet.magic);
     Serial.print("version: ");Serial.println(packet.version);
     Serial.print("sequence: ");Serial.println(packet.sequence);
