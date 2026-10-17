@@ -18,3 +18,6 @@ from the LEDs to produce different visual blurring effects.
 I am collaborating with chatGPT in designing and coding this project.
 
 dlf  9/22/2026
+
+### Schematics
+![Alt text](./PixelPanelSchematic.png "PixelPanel Schematic")
