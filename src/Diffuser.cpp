@@ -30,6 +30,6 @@ void Diffuser::sampleDiffuserPot() {
         pwm.setPWM(2, 0, pulseLen2);
         pwm.setPWM(3, 0, pulseLen3);
         lastPotVal = potVal;
-        Serial.printf("PotVal: %d   Pulse: %d\n",potVal,pulseLen0);
+        //Serial.printf("PotVal: %d   Pulse: %d\n",potVal,pulseLen0);
     }
 };

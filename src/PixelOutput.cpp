@@ -28,7 +28,7 @@ bool PixelOutput::begin()
         esp_err_t result = rmt_config(&config);
 
         if (result != ESP_OK) {
-            Serial.print("RMT config failed for channel ");
+            Serial.print(F("RMT config failed for channel "));
             Serial.println(i);
             return false;
         }
@@ -40,7 +40,7 @@ bool PixelOutput::begin()
         );
 
         if (result != ESP_OK) {
-            Serial.print("RMT driver install failed for channel ");
+            Serial.print(F("RMT driver install failed for channel "));
             Serial.println(i);
             return false;
         }
@@ -48,13 +48,12 @@ bool PixelOutput::begin()
         result = rmt_translator_init( RMT_CHANNELS[i], ws2812Translator);
 
         if (result != ESP_OK) {
-            Serial.print("RMT translator init failed for channel ");
+            Serial.print(F("RMT translator init failed for channel "));
             Serial.println(i);
             return false;
         }
     }
 
-    Serial.println("PixelOutput initialized.");
     return true;
 }
 
@@ -115,7 +114,7 @@ void PixelOutput::show(const PixelFramebuffer &framebuffer)
         );
 
         if (result != ESP_OK) {
-            Serial.print("RMT transmit failed on channel ");
+            Serial.print(F("RMT transmit failed on channel "));
             Serial.println(channel);
         }
     }
@@ -132,7 +131,7 @@ void PixelOutput::show(const PixelFramebuffer &framebuffer)
         );
 
         if (result != ESP_OK) {
-            Serial.print("RMT wait failed on channel ");
+            Serial.print(F("RMT wait failed on channel "));
             Serial.println(channel);
         }
     }

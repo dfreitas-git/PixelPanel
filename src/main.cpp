@@ -27,6 +27,7 @@ dlf  9/22/2026
 #include "PixelOutput.h"
 #include "TestPanel.h"
 #include "Diffuser.h"
+#include "PanelController.h"
 #include "graphicsPrimitives.h"
 #include "graphicsParticles.h"
 #include "graphicsComposites.h"
@@ -35,6 +36,7 @@ dlf  9/22/2026
 PanelRadio panelRadio;
 PixelFramebuffer framebuffer;
 PixelOutput pixelOutput;
+PanelController panelController;
 TestPanel testPanel;
 Diffuser diffuser;
 GraphicsPrimitives gPrim;
@@ -49,12 +51,17 @@ void setup()
 {
     Serial.begin(115200);
 
+     // Wait for USB serial connection (min 2 seconds, max 5) so serial prints show up...
+    while ((!Serial || millis() < 2000) && millis() < 5000) {
+        delay(10);
+    }
+
     // Set up the diffuser servos
     diffuser.begin();
 
     // Set up ESP-NOW
-    if (!panelRadio.begin(PANEL_MAC)) {
-        Serial.println("Fatal ESP-NOW initialization error.");
+    if (!panelRadio.begin(WAND_MAC)) {
+        Serial.println(F("Fatal ESP-NOW initialization error."));
 
         while (true) {
             delay(1000);
@@ -62,7 +69,7 @@ void setup()
     }
 
     if (!pixelOutput.begin()) {
-        Serial.println("Fatal PixelOutput initialization error.");
+        Serial.println(F("Fatal PixelOutput initialization error."));
         while (true) {
             delay(1000);
         }
@@ -83,84 +90,33 @@ void loop()
         lastDiffuserUpdate = now;
     }
 
-    // Testing framebuffer
-    //testPanel.runAllTests(pixelOutput, framebuffer);
+    WandPacket packet;
+    GestureEvent event;
+
+    static char text[4];
+    while (panelRadio.getNextPacket(packet)) {
+
+        // Process continuous pose/motion data
+        // using packet.roll, packet.pitch, etc.
+    
+        if (panelRadio.processPacket(packet, event)) {
+            Serial.print(F("Event # ")); Serial.println(event.eventSequence);
+            panelController.processGesture(event.gesture);
+            itoa(event.eventSequence, text, 10);
+        }
+    }
 
     palette c;
     RGB *bbuf = framebuffer.data();
-    static int animCnt = 0;
-    static int sceneDisplayTime = 5000;
-    static uint32_t lastSceneSwitchTime = millis();
-    if(millis() - lastSceneSwitchTime > sceneDisplayTime) {
-        lastSceneSwitchTime = millis();
 
-        // star and rocket animations need to be init'ed
-        if(animCnt == 0) {
-            gAnim.initShootingStars();
-        }
-        if(animCnt == 1) {
-            gAnim.initRocket();
-        }
-        animCnt++;
-        if(animCnt == 9) {
-            animCnt = 0;
-        }
+    // Use rocket for testing
+    static bool doOnce = true;
+    if(doOnce) {
+        gAnim.initShootingStars();
+        doOnce = false;
     }
-
-    switch (animCnt) {
-        case 0: {gAnim.shootingStar(bbuf); break;}
-        case 1: {gAnim.fireworks(bbuf); break;}
-        case 2: {gAnim.checker(bbuf);  break;}
-        case 3: {gAnim.spiralD(bbuf); break;}
-        case 4: {gAnim.flower(bbuf);  break;}
-        case 5: {gAnim.eyeball(bbuf); break;}
-        case 6: {gAnim.pacman1(bbuf); break;}
-        case 7: {gAnim.pacman1(bbuf); break;}
-        case 8: {gAnim.flames(bbuf); break;}
-    }
+    gAnim.shootingStar(bbuf);
+    gPrim.drawString(bbuf, text, 5, 5, {255,255,255}, {0,0,0});
     pixelOutput.show(framebuffer);
-
-    /*
-    gPrim.drawTriangle(bbuf,{3,3},{20,15},{27,3},c.red);
-    gPrim.drawTriangle(bbuf,{5,20},{10,29},{15,20},c.green);
-    gPrim.drawLine(bbuf,0,15,29,15,1,c.blue);
-    gPrim.drawArc(bbuf,{1,20},{15,10},{28,25}, 1, c.limegreen);
-    gPrim.drawRect(bbuf,20,20,29,29,0,c.darkred);
-    gPrim.drawRect(bbuf,23,23,28,25,0,c.green);
-    gPrim.drawDiamond(bbuf,25,25,2,4,c.blue);
-    gPrim.drawEllipse(bbuf,12,5,6,3,0,c.blue);
-    gPrim.drawCircle(bbuf,5,25,3,c.blue);
-    pixelOutput.show(framebuffer);
-    delay(2000);
-
-    framebuffer.clear();
-    gPrim.drawDiagonalBands(bbuf,0,1,2,1,29,c.red);
-    gPrim.drawDiagonalBands(bbuf,0,-1,2,2,29,c.blue);
-    gPrim.drawString(bbuf,"PINE", 2,15, c.green, c.black);
-    pixelOutput.show(framebuffer);
-    delay(2000);
-    */
-
-
-    /*
-    // dlf  Need to fix this.  Right now the the ESP-NOW callback can asynchronously overwrite the packet while we are 
-    // reading this.  Need to add a producer/consumer interface.  Probably adding a "getLatestPacket" or some such that
-    // returns the latest complete packet and tells the caller when a new one is ready.
-    const WandPacket &packet = panelRadio.getPacket();
-    Serial.print("magic: ");Serial.println(packet.magic);
-    Serial.print("version: ");Serial.println(packet.version);
-    Serial.print("sequence: ");Serial.println(packet.sequence);
-    Serial.print("timestampMs: ");Serial.println(packet.timestampMs);
-    Serial.print("roll: ");Serial.println(packet.roll*180/PI);
-    Serial.print("pitch: ");Serial.println(packet.pitch*180/PI);
-    Serial.print("yaw: ");Serial.println(packet.yaw*180/PI);
-    Serial.print("gx: ");Serial.println(packet.gx);
-    Serial.print("gy: ");Serial.println(packet.gy);
-    Serial.print("gz: ");Serial.println(packet.gz);
-    Serial.print("vx: ");Serial.println(packet.vx);
-    Serial.print("vy: ");Serial.println(packet.vy);
-    Serial.print("vz: ");Serial.println(packet.vz);
-    Serial.println(" ");
-    delay(500);
-    */
+    
 }
