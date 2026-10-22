@@ -33,6 +33,14 @@ bool PanelRadio::begin(const uint8_t panelMac[6])
         return false;
     }
 
+    // We use a RTOS queue to manage the packets being sent from the wand
+    packetQueue = xQueueCreate( QUEUE_SIZE, sizeof(WandPacket));
+
+    if (packetQueue == nullptr) {
+        Serial.println(F("Failed to create packet queue"));
+        return false;
+    }
+
     instance = this;
 
     if (esp_now_register_recv_cb(OnDataRecv) != ESP_OK) {
@@ -41,14 +49,6 @@ bool PanelRadio::begin(const uint8_t panelMac[6])
     }
 
     initialized = true;
-
-    packetQueue = xQueueCreate( QUEUE_SIZE, sizeof(WandPacket));
-
-    if (packetQueue == nullptr) {
-        Serial.println(F("Failed to create packet queue"));
-        return false;
-    }
-
     return true;
 }
 
