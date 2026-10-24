@@ -93,30 +93,34 @@ void loop()
     WandPacket packet;
     GestureEvent event;
 
-    static char text[4];
     while (panelRadio.getNextPacket(packet)) {
 
-        // Process continuous pose/motion data
-        // using packet.roll, packet.pitch, etc.
+        // Process continuous pose/motion data using packet.roll, packet.pitch, etc.
+        panelController.processPose(packet);
     
+        // Process any gestures
         if (panelRadio.processPacket(packet, event)) {
-            Serial.print(F("Event # ")); Serial.println(event.eventSequence);
+            //Serial.print(F("Event # ")); Serial.println(event.eventSequence);
             panelController.processGesture(event.gesture);
-            itoa(event.eventSequence, text, 10);
         }
     }
 
     palette c;
     RGB *bbuf = framebuffer.data();
 
-    // Use rocket for testing
+    // Use shootingStar for testing
     static bool doOnce = true;
     if(doOnce) {
         gAnim.initShootingStars();
         doOnce = false;
     }
-    gAnim.shootingStar(bbuf);
-    gPrim.drawString(bbuf, text, 5, 5, {255,255,255}, {0,0,0});
+
+    // init a superStar if thrustIn detected
+    if (panelController.consumeSuperStarLaunch()) {
+        gAnim.initSuperStar();
+    }
+
+    gAnim.shootingStar( bbuf, panelController.getShootingStarSettings());
     pixelOutput.show(framebuffer);
     
 }
