@@ -21,7 +21,7 @@ dlf  9/22/2026
 #include <Arduino.h>
 #include <WiFi.h>
 
-#include "globals.h"
+#include "Globals.h"
 #include "PanelRadio.h"
 #include "PixelFramebuffer.h"
 #include "PixelOutput.h"
@@ -101,7 +101,7 @@ void loop()
         // Process any gestures
         if (panelRadio.processPacket(packet, event)) {
             //Serial.print(F("Event # ")); Serial.println(event.eventSequence);
-            panelController.processGesture(event.gesture);
+            panelController.processGesture(event);
         }
     }
 
@@ -115,9 +115,11 @@ void loop()
         doOnce = false;
     }
 
-    // init a superStar if thrustIn detected
-    if (panelController.consumeSuperStarLaunch()) {
-        gAnim.initSuperStar();
+    // init a superStar if swipe detected
+    float direction;
+
+    if (panelController.consumeSuperStarLaunch(direction)) {
+        gAnim.initSuperStar(direction);
     }
 
     gAnim.shootingStar( bbuf, panelController.getShootingStarSettings());

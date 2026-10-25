@@ -1,15 +1,29 @@
 #include "PanelController.h"
 
-void PanelController::processGesture(WandGesture gesture) {
-    switch (gesture) {
+//void PanelController::processGesture(WandGesture gesture) {
+void PanelController::processGesture(const GestureEvent& event) {
+    switch (event.gesture) {
 
         case WandGesture::ThrustIn:
-            Serial.println("ThrustIn gesture detected");
-            superStarLaunchPending = true;
+            if(DEBUG_PRINT == 1) { 
+                Serial.println(F("ThrustIn gesture detected"));
+                superStarLaunchPending = true;
+            }
             break;
 
         case WandGesture::ThrustOut:
-            Serial.println("ThrustOut gesture detected");
+            if(DEBUG_PRINT == 1) { 
+                Serial.println(F("ThrustOut gesture detected"));
+            }
+            break;
+
+        case WandGesture::Swipe:
+            if(DEBUG_PRINT == 1) { 
+                Serial.print(F("Swipe gesture detected.  Swipe Angle: "));
+                Serial.println(event.swipeDirection * 180 / PI);
+            }
+            superStarLaunchPending = true;
+            superStarDirection = event.swipeDirection;
             break;
 
         default:
@@ -29,10 +43,11 @@ void PanelController::processPose(const WandPacket& packet) {
     // as we add more
 }
 
-bool PanelController::consumeSuperStarLaunch() {
-    // if nothing pending just return
+bool PanelController::consumeSuperStarLaunch(float& direction) {
     if (!superStarLaunchPending)
         return false;
+
+    direction = superStarDirection;
 
     // if launch pending, reset the pending and acknowledge we saw it to the caller
     // This is how we only execute the launch once per pending request
