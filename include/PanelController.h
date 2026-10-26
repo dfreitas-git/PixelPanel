@@ -17,9 +17,11 @@ public:
         return shootingStarSettings;
     }
     bool consumeSuperStarLaunch(float& direction);
+    WandMode getMode() const { return currentMode; }
 
 private:
     ShootingStarSettings shootingStarSettings;
     bool superStarLaunchPending = false;
     float superStarDirection = 0.0f;
+    WandMode currentMode = WandMode::Scene;
 };

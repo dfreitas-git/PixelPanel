@@ -33,6 +33,9 @@ void PanelController::processGesture(const GestureEvent& event) {
 
 void PanelController::processPose(const WandPacket& packet) {
 
+    // assign which mode, scene or panel, we are in
+    currentMode = packet.mode;
+
     // For shootingStars anim, control the number of stars with the wand roll 
     int rollInDegrees = constrain(round(packet.roll * 180.0/PI), -45, 45);
     int pitchInDegrees = constrain(round(packet.pitch * 180.0/PI), -45, 45);

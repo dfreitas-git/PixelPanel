@@ -111,6 +111,7 @@ bool PanelRadio::processPacket( const WandPacket& packet, GestureEvent& event) {
     event.eventSequence = packet.eventSequence;
     event.eventTimestampMs = packet.eventTimestampMs;
     event.swipeDirection = packet.swipeDirection;
+    event.mode = packet.mode;
 
     return true;
 }

@@ -77,12 +77,14 @@ void setup()
 
     framebuffer.clear();
     pixelOutput.show(framebuffer);
-    gAnim.initShootingStars();  // So we have something the first time through the loop
 
 }
 
 void loop()
 {
+    // Had to do this because the Serial monitor was spewing garbage with only the setup() Serial.print
+    // This kept the serial monitor sane.  Don't ask me how...
+
     // Manually setting diffuser distance via a potentiometer
     uint32_t now = millis();
     if(now-lastDiffuserUpdate > DIFFUSER_UPDATE_TIME) {
@@ -108,21 +110,29 @@ void loop()
     palette c;
     RGB *bbuf = framebuffer.data();
 
-    // Use shootingStar for testing
-    static bool doOnce = true;
-    if(doOnce) {
-        gAnim.initShootingStars();
-        doOnce = false;
-    }
 
-    // init a superStar if swipe detected
-    float direction;
-
-    if (panelController.consumeSuperStarLaunch(direction)) {
-        gAnim.initSuperStar(direction);
-    }
-
-    gAnim.shootingStar( bbuf, panelController.getShootingStarSettings());
-    pixelOutput.show(framebuffer);
+    // Scene mode
+    if (panelController.getMode() == WandMode::Scene) {
+        // Use shootingStar for testing
+        static bool doOnce = true;
+        if(doOnce) {
+            gAnim.initShootingStars();
+            doOnce = false;
+        }
     
+        // init a superStar if swipe detected
+        float direction;
+    
+        if (panelController.consumeSuperStarLaunch(direction)) {
+            gAnim.initSuperStar(direction);
+        }
+    
+        gAnim.shootingStar( bbuf, panelController.getShootingStarSettings());
+        pixelOutput.show(framebuffer);
+
+    // Panel mode
+    } else {
+        testPanel.corners(framebuffer);
+        pixelOutput.show(framebuffer);
+    }
 }
