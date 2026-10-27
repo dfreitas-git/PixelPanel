@@ -32,17 +32,23 @@ dlf  9/22/2026
 #include "graphicsParticles.h"
 #include "graphicsComposites.h"
 #include "graphicsAnimations.h"
+#include "ShootingStarsScene.h"
+
 
 PanelRadio panelRadio;
 PixelFramebuffer framebuffer;
 PixelOutput pixelOutput;
-PanelController panelController;
 TestPanel testPanel;
 Diffuser diffuser;
+
 GraphicsPrimitives gPrim;
 GraphicsParticles gPart;
 GraphicsComposites gComp;
 GraphicsAnimations gAnim;
+
+// The concrete scene uses our existing animation engine
+ShootingStarsScene shootingStarsScene(gAnim);
+PanelController panelController;
 
 constexpr uint16_t DIFFUSER_UPDATE_TIME = 200;  // ms between reading diffuser setting pot
 uint16_t lastDiffuserUpdate = 0;
@@ -74,6 +80,9 @@ void setup()
             delay(1000);
         }
     }
+
+    // Select the initial scene
+    panelController.setActiveScene(shootingStarsScene);
 
     framebuffer.clear();
     pixelOutput.show(framebuffer);
@@ -107,32 +116,16 @@ void loop()
         }
     }
 
-    palette c;
-    RGB *bbuf = framebuffer.data();
-
-
     // Scene mode
     if (panelController.getMode() == WandMode::Scene) {
-        // Use shootingStar for testing
-        static bool doOnce = true;
-        if(doOnce) {
-            gAnim.initShootingStars();
-            doOnce = false;
-        }
-    
-        // init a superStar if swipe detected
-        float direction;
-    
-        if (panelController.consumeSuperStarLaunch(direction)) {
-            gAnim.initSuperStar(direction);
-        }
-    
-        gAnim.shootingStar( bbuf, panelController.getShootingStarSettings());
-        pixelOutput.show(framebuffer);
-
-    // Panel mode
-    } else {
-        testPanel.corners(framebuffer);
-        pixelOutput.show(framebuffer);
+        panelController.renderScene(framebuffer);
     }
+    // Panel mode
+    else {
+        testPanel.corners(framebuffer);
+    }
+    
+    // Output whichever mode rendered the framebuffer
+    pixelOutput.show(framebuffer);
+
 }

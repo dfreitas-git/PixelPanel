@@ -1,27 +1,26 @@
-
 #pragma once
 
 #include <Arduino.h>
 #include "Globals.h"
-#include "WandProtocol.h"
-#include "graphicsAnimations.h"
+#include "Scene.h"
 
 class PanelController {
-
 public:
-    //void processGesture(WandGesture gesture);
-    void processGesture(const GestureEvent& event);
-    void processPose(const WandPacket& packet);
+    //explicit PanelController(Scene& initialScene);
 
-    const ShootingStarSettings& getShootingStarSettings() const {
-        return shootingStarSettings;
-    }
-    bool consumeSuperStarLaunch(float& direction);
+    void setActiveScene(Scene& scene);
+
+    void processPose(const WandPacket& packet);
+    void processGesture(const GestureEvent& event);
+
+    void renderScene(PixelFramebuffer& framebuffer);
+
     WandMode getMode() const { return currentMode; }
 
 private:
-    ShootingStarSettings shootingStarSettings;
-    bool superStarLaunchPending = false;
-    float superStarDirection = 0.0f;
+    Scene* activeScene = nullptr;
     WandMode currentMode = WandMode::Scene;
+
+    void processPanelPose(const WandPacket& packet);
+    void processPanelGesture(const GestureEvent& event);
 };
