@@ -13,6 +13,22 @@ scene parameters).
 The PixelPanel has a software controlled diffuser screen which may be moved closer/farther 
 from the LEDs to produce different visual blurring effects.
 
+To add a new scene do the following:
+    1) Create  SceneName.h (or copy an existing one as a template)
+        - Edit/add class name
+        - instantiate private settings{}
+        - Update name() method with menu name
+    2) Create ScemeName.cpp (or copy an existing one as a template)
+        - Edit/add processPose code,
+        - Edit/add processGesture code
+        - Edit/add render call
+    3) Edit the graphicsAnimation function to add settings structure, modify the animation function to use the settings
+    4) Update main.cpp
+       - #include SceneName.h
+       - instantiate scene object
+       - register scene with addScene in setup
+
+
 I am collaborating with chatGPT in designing and coding this project.
 
 dlf  9/22/2026
@@ -26,6 +42,7 @@ dlf  9/22/2026
 #include "PixelFramebuffer.h"
 #include "PixelOutput.h"
 #include "TestPanel.h"
+#include "PanelMenu.h"
 #include "Diffuser.h"
 #include "PanelController.h"
 #include "graphicsPrimitives.h"
@@ -33,22 +50,35 @@ dlf  9/22/2026
 #include "graphicsComposites.h"
 #include "graphicsAnimations.h"
 #include "ShootingStarsScene.h"
+#include "FireworksScene.h"
+#include "CheckerBoardScene.h"
+#include "EyeballScene.h"
+#include "Pacman1Scene.h"
 
 
 PanelRadio panelRadio;
+
 PixelFramebuffer framebuffer;
 PixelOutput pixelOutput;
+
 TestPanel testPanel;
 Diffuser diffuser;
 
+// Instantiate the graphics objects
 GraphicsPrimitives gPrim;
 GraphicsParticles gPart;
 GraphicsComposites gComp;
 GraphicsAnimations gAnim;
 
-// The concrete scene uses our existing animation engine
+// The scenes use our existing animation engine from MyGraphics
 ShootingStarsScene shootingStarsScene(gAnim);
+FireworksScene fireworksScene(gAnim);
+CheckerBoardScene checkerBoardScene(gAnim);
+EyeballScene eyeballScene(gAnim);
+Pacman1Scene pacman1Scene(gAnim);
+
 PanelController panelController;
+PanelMenu panelMenu(gPrim);
 
 constexpr uint16_t DIFFUSER_UPDATE_TIME = 200;  // ms between reading diffuser setting pot
 uint16_t lastDiffuserUpdate = 0;
@@ -81,8 +111,14 @@ void setup()
         }
     }
 
-    // Select the initial scene
-    panelController.setActiveScene(shootingStarsScene);
+    // Register the scenes and select the default
+    panelController.addScene(shootingStarsScene);
+    panelController.addScene(fireworksScene);
+    panelController.addScene(checkerBoardScene);
+    panelController.addScene(eyeballScene);
+    panelController.addScene(pacman1Scene);
+
+    panelController.selectScene(0);
 
     framebuffer.clear();
     pixelOutput.show(framebuffer);
@@ -106,14 +142,48 @@ void loop()
 
     while (panelRadio.getNextPacket(packet)) {
 
+        WandMode previousMode = panelController.getMode();
+
         // Process continuous pose/motion data using packet.roll, packet.pitch, etc.
         panelController.processPose(packet);
-    
+
+        // When we go into panel mode, reset navigation direction state in case we exited
+        // panel mode last time while in a L/R/U/D state
+        if (previousMode != panelController.getMode() &&
+            panelController.getMode() == WandMode::Panel) {
+            panelMenu.resetNavigation();
+        }
+
+        // Execute the panel command
+        if (packet.mode == WandMode::Panel) {
+            MenuDirection md = panelMenu.processNavigationPose(packet);
+
+            if (md == MenuDirection::Right) {
+                uint8_t next = (panelController.getActiveSceneIndex() + 1) % panelController.getSceneCount();
+                panelController.selectScene(next);
+            }
+
+            if (md == MenuDirection::Left) {
+                uint8_t previous = (panelController.getActiveSceneIndex() + panelController.getSceneCount() - 1) % panelController.getSceneCount();
+                panelController.selectScene(previous);
+            }
+        }
+
         // Process any gestures
         if (panelRadio.processPacket(packet, event)) {
             //Serial.print(F("Event # ")); Serial.println(event.eventSequence);
             panelController.processGesture(event);
         }
+    }
+
+    // Clear the framebuffer so we don't have residual bits from a previous scene
+    // Technically we would only need to do this if the last scene and current scene
+    // changed, but this is simple and safe since we always switch modes when changing a scene
+    static WandMode lastMode = WandMode::Scene;
+    WandMode mode = panelController.getMode();
+    if (mode != lastMode) {
+        framebuffer.clear();
+        lastMode = mode;
     }
 
     // Scene mode
@@ -122,9 +192,9 @@ void loop()
     }
     // Panel mode
     else {
-        testPanel.corners(framebuffer);
+        panelMenu.render(framebuffer, panelController);
     }
-    
+
     // Output whichever mode rendered the framebuffer
     pixelOutput.show(framebuffer);
 

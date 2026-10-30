@@ -1,6 +1,8 @@
 
 #include "PanelController.h"
 
+
+// Either process the packet for the scene or for the panel base on what mode the packet is intended for
 void PanelController::processPose(const WandPacket& packet) {
 
     currentMode = packet.mode;
@@ -8,15 +10,37 @@ void PanelController::processPose(const WandPacket& packet) {
     if (currentMode == WandMode::Scene) {
         if (activeScene)
             activeScene->processPose(packet);
-    }
-    else {
+
+    } else {
         processPanelPose(packet);
     }
 }
 
-void PanelController::setActiveScene(Scene& scene) {
-    activeScene = &scene;
+void PanelController::addScene(Scene& scene) {
+
+    if (sceneCount >= MAX_SCENES)
+        return;
+
+    scenes[sceneCount++] = &scene;
+}
+
+void PanelController::selectScene(uint8_t index) {
+
+    if (index >= sceneCount)
+        return;
+
+    if (activeSceneIndex == index && activeScene != nullptr)
+        return;
+
+    activeSceneIndex = index;
+    activeScene = scenes[index];
+
     activeScene->begin();
+}
+
+const char* PanelController::getSceneName(uint8_t index) const {
+    if (index >= sceneCount) return "";
+    return scenes[index]->name();
 }
 
 void PanelController::processGesture(
@@ -44,8 +68,28 @@ void PanelController::processPanelPose(
     // Future panel-wide pose controls
 }
 
+
+// Panel-mode Gestures are for panel setup, scene selection, etc.
 void PanelController::processPanelGesture(
     const GestureEvent& event)
 {
-    // Future panel-wide gesture controls
+    switch (event.gesture) {
+        case WandGesture::Swipe:
+            if(DEBUG_PRINT == 1) {
+                Serial.println(F("Process Panel Swipe"));
+            } 
+            break;
+
+        case WandGesture::ThrustIn:
+            if(DEBUG_PRINT == 1) {
+                Serial.println(F("Process Panel ThrustIn"));
+            } 
+            break;
+
+        case WandGesture::ThrustOut:
+            if(DEBUG_PRINT == 1) {
+                Serial.println(F("Process Panel ThrustOut"));
+            } 
+            break;
+    }
 }

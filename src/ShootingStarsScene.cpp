@@ -2,11 +2,7 @@
 #include "ShootingStarsScene.h"
 #include "Globals.h"
 
-ShootingStarsScene::ShootingStarsScene(
-    GraphicsAnimations& animations)
-    : gAnim(animations)
-{
-}
+ShootingStarsScene::ShootingStarsScene( GraphicsAnimations& animations) : gAnim(animations) { }
 
 void ShootingStarsScene::begin() {
     superStarLaunchPending = false;

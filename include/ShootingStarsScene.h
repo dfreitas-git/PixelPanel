@@ -9,6 +9,8 @@ class ShootingStarsScene : public Scene {
 public:
     explicit ShootingStarsScene(GraphicsAnimations& animations);
 
+    const char* name() const override { return "STAR"; }
+
     void begin() override;
 
     void processPose(const WandPacket& packet) override;

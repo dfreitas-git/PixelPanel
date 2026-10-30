@@ -8,6 +8,8 @@
 class Scene {
 public:
 
+    virtual const char* name() const = 0;  // the name of the sceme
+
     virtual ~Scene() = default;
     virtual void begin() {}
 
