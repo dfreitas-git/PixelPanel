@@ -157,15 +157,40 @@ void loop()
         // Execute the panel command
         if (packet.mode == WandMode::Panel) {
             MenuDirection md = panelMenu.processNavigationPose(packet);
+            uint8_t next;
+            uint8_t previous;
 
-            if (md == MenuDirection::Right) {
-                uint8_t next = (panelController.getActiveSceneIndex() + 1) % panelController.getSceneCount();
-                panelController.selectScene(next);
+            if (md == MenuDirection::Down) {
+
+                if(panelController.getCurrentPage() == MenuPage::Main) {
+                    next = (panelController.getActiveMainIndex() + 1) % panelController.getMainCount();
+                    panelController.selectMain(next);
+                }
+
+                if(panelController.getCurrentPage() == MenuPage::Scenes) {
+                    next = (panelController.getActiveSceneIndex() + 1) % panelController.getSceneCount();
+                    panelController.selectScene(next);
+                }
             }
 
+            if (md == MenuDirection::Up) {
+                if(panelController.getCurrentPage() == MenuPage::Main) {
+                    previous = (panelController.getActiveMainIndex() + panelController.getMainCount() - 1) % panelController.getMainCount();
+                    panelController.selectMain(previous);
+                }
+
+                if(panelController.getCurrentPage() == MenuPage::Scenes) {
+                    previous = (panelController.getActiveSceneIndex() + panelController.getSceneCount() - 1) % panelController.getSceneCount();
+                    panelController.selectScene(previous);
+                }
+            }
+            if (md == MenuDirection::Right) {
+                if(panelController.getMainName(panelController.getActiveMainIndex()) == "SCENE") {
+                  panelController.setCurrentPage(MenuPage::Scenes);
+                }
+            }
             if (md == MenuDirection::Left) {
-                uint8_t previous = (panelController.getActiveSceneIndex() + panelController.getSceneCount() - 1) % panelController.getSceneCount();
-                panelController.selectScene(previous);
+                panelController.setCurrentPage(MenuPage::Main);
             }
         }
 

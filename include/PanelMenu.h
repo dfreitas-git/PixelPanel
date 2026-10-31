@@ -15,15 +15,27 @@ enum class MenuDirection {
     Down
 };
 
+enum class MenuActionType {
+    None,
+    SelectScene,
+    SetBrightness,
+    SetDiffuser,
+    RunTest
+};
+
+struct MenuAction {
+    MenuActionType type = MenuActionType::None;
+    int value = 0;
+};
+
 class PanelMenu {
 
 public:
     explicit PanelMenu(GraphicsPrimitives& graphics) : gPrim(graphics) {}
-
-    MenuDirection processNavigationPose(const WandPacket& packet);
     void resetNavigation();
-
+    MenuDirection processNavigationPose(const WandPacket& packet);
     void render(PixelFramebuffer& framebuffer, const PanelController& controller);
+
 
 private:
     GraphicsPrimitives& gPrim;
@@ -32,12 +44,15 @@ private:
     void updateVisibleWindow(uint8_t selectedIndex);
 
     MenuDirection heldDirection = MenuDirection::None;
+    MenuActionType menuActionType;
 
     uint32_t lastStepMs = 0;
     bool repeatStarted = false;
 
-    static constexpr float ENGAGE_ANGLE = 28.0f * PI / 180.0f;
-    static constexpr float RELEASE_ANGLE = 20.0f * PI / 180.0f;
+    static constexpr float ENGAGE_ANGLE_PITCH = 15.0f * PI / 180.0f;
+    static constexpr float RELEASE_ANGLE_PITCH = 10.0f * PI / 180.0f;
+    static constexpr float ENGAGE_ANGLE_ROLL = 28.0f * PI / 180.0f;
+    static constexpr float RELEASE_ANGLE_ROLL = 20.0f * PI / 180.0f;
     static constexpr uint32_t INITIAL_REPEAT_MS = 500;
     static constexpr uint32_t REPEAT_MS = 300;
 

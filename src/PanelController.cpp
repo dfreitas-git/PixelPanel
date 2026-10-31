@@ -24,6 +24,14 @@ void PanelController::addScene(Scene& scene) {
     scenes[sceneCount++] = &scene;
 }
 
+void PanelController::selectMain(uint8_t index) {
+
+    if (index >= mainCount)
+        return;
+
+    activeMainIndex = index;
+}
+
 void PanelController::selectScene(uint8_t index) {
 
     if (index >= sceneCount)
@@ -70,8 +78,7 @@ void PanelController::processPanelPose(
 
 
 // Panel-mode Gestures are for panel setup, scene selection, etc.
-void PanelController::processPanelGesture(
-    const GestureEvent& event)
+void PanelController::processPanelGesture( const GestureEvent& event)
 {
     switch (event.gesture) {
         case WandGesture::Swipe:
@@ -84,12 +91,16 @@ void PanelController::processPanelGesture(
             if(DEBUG_PRINT == 1) {
                 Serial.println(F("Process Panel ThrustIn"));
             } 
+            // if(main[activeMainIndex] == "SCENE") {
+            //     currentPage = (MenuPage::Scenes);
+            // }
             break;
 
         case WandGesture::ThrustOut:
             if(DEBUG_PRINT == 1) {
                 Serial.println(F("Process Panel ThrustOut"));
             } 
+            // currentPage = (MenuPage::Main);
             break;
     }
 }

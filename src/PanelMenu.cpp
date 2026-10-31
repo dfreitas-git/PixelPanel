@@ -1,5 +1,7 @@
 #include "PanelMenu.h"
 
+// Code to present a menu for selecting scenes, controlling panel parameters (diffuser, brightness, etc.)
+
 MenuDirection PanelMenu::processNavigationPose(
     const WandPacket& packet)
 {
@@ -18,12 +20,12 @@ MenuDirection PanelMenu::processNavigationPose(
 
             case MenuDirection::Right:
             case MenuDirection::Left:
-                released = fabsf(roll) < RELEASE_ANGLE;
+                released = fabsf(roll) < RELEASE_ANGLE_ROLL;
                 break;
 
             case MenuDirection::Up:
             case MenuDirection::Down:
-                released = fabsf(pitch) < RELEASE_ANGLE;
+                released = fabsf(pitch) < RELEASE_ANGLE_PITCH;
                 break;
 
             default:
@@ -50,14 +52,14 @@ MenuDirection PanelMenu::processNavigationPose(
     }
 
     // Nothing currently held: detect a new direction.
-    if (fabsf(roll) > ENGAGE_ANGLE &&
+    if (fabsf(roll) > ENGAGE_ANGLE_ROLL &&
         fabsf(roll) >= fabsf(pitch)) {
 
         heldDirection = roll > 0
             ? MenuDirection::Right
             : MenuDirection::Left;
     }
-    else if (fabsf(pitch) > ENGAGE_ANGLE) {
+    else if (fabsf(pitch) > ENGAGE_ANGLE_PITCH) {
 
         heldDirection = pitch > 0
             ? MenuDirection::Up
@@ -92,36 +94,50 @@ void PanelMenu::updateVisibleWindow(uint8_t selectedIndex)
     }
 }
 
-void PanelMenu::render(
-    PixelFramebuffer& framebuffer,
-    const PanelController& controller)
+void PanelMenu::render( PixelFramebuffer& framebuffer, const PanelController& controller)
 {
     framebuffer.clear();
 
-    uint8_t sceneCount = controller.getSceneCount();
+    uint8_t selectedIndex;
+    uint8_t itemCount;
+    const char* itemName;
 
-    if (sceneCount == 0)
-        return;
+    switch(controller.getCurrentPage()) {
+        case MenuPage::Scenes:
+            itemCount = controller.getSceneCount();
+            if (itemCount == 0)
+                return;
 
-    uint8_t selectedIndex = controller.getActiveSceneIndex();
+            selectedIndex = controller.getActiveSceneIndex();
+            break;
+
+        case MenuPage::Main:
+            itemCount = controller.getMainCount();
+            if (itemCount == 0)
+                return;
+
+            selectedIndex = controller.getActiveMainIndex();
+            break;
+    }
 
     updateVisibleWindow(selectedIndex);
 
     // Menu colors
-    const RGB normalColor   = {20, 20, 20};
-    const RGB selectedColor = {0, 100, 0};
-    const RGB background    = {0, 0, 0};
+    const RGB normalColor   = {20, 20, 20};  // dark white
+    const RGB selectedColor = {0, 100, 0};   // green
+    const RGB background    = {0, 0, 0};     // black
 
     for (uint8_t line = 0; line < VISIBLE_ROWS; line++) {
+        uint8_t itemIndex = firstVisibleIndex + line;
 
-        uint8_t sceneIndex = firstVisibleIndex + line;
-
-        if (sceneIndex >= sceneCount)
+        if (itemIndex >= itemCount)
             break;
+        if(controller.getCurrentPage() == MenuPage::Main) 
+            itemName = controller.getMainName(itemIndex);
+        if(controller.getCurrentPage() == MenuPage::Scenes) 
+            itemName = controller.getSceneName(itemIndex);
 
-        const char* name = controller.getSceneName(sceneIndex);
-
-        RGB color = (sceneIndex == selectedIndex)
+        RGB color = (itemIndex == selectedIndex)
             ? selectedColor
             : normalColor;
 
@@ -130,7 +146,7 @@ void PanelMenu::render(
 
         gPrim.drawString(
             framebuffer.data(),
-            name,
+            itemName,
             0,
             y,
             color,
@@ -144,7 +160,7 @@ void PanelMenu::render(
         }
         
         // Additional menu items below the visible window
-        if (firstVisibleIndex + VISIBLE_ROWS < sceneCount) {
+        if (firstVisibleIndex + VISIBLE_ROWS < itemCount) {
             framebuffer.setPixel(14, 0, 0, 50, 0);
             framebuffer.setPixel(15, 0, 0, 50, 0);
         }
