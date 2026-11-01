@@ -127,9 +127,6 @@ void setup()
 
 void loop()
 {
-    // Had to do this because the Serial monitor was spewing garbage with only the setup() Serial.print
-    // This kept the serial monitor sane.  Don't ask me how...
-
     // Manually setting diffuser distance via a potentiometer
     uint32_t now = millis();
     if(now-lastDiffuserUpdate > DIFFUSER_UPDATE_TIME) {
@@ -149,54 +146,20 @@ void loop()
 
         // When we go into panel mode, reset navigation direction state in case we exited
         // panel mode last time while in a L/R/U/D state
-        if (previousMode != panelController.getMode() &&
-            panelController.getMode() == WandMode::Panel) {
+        if (previousMode != panelController.getMode() && panelController.getMode() == WandMode::Panel) {
             panelMenu.resetNavigation();
         }
 
-        // Execute the panel command
+        // PanelMenu owns navigation and hierarchy. Execute only its requests.
         if (packet.mode == WandMode::Panel) {
-            MenuDirection md = panelMenu.processNavigationPose(packet);
-            uint8_t next;
-            uint8_t previous;
-
-            if (md == MenuDirection::Down) {
-
-                if(panelController.getCurrentPage() == MenuPage::Main) {
-                    next = (panelController.getActiveMainIndex() + 1) % panelController.getMainCount();
-                    panelController.selectMain(next);
-                }
-
-                if(panelController.getCurrentPage() == MenuPage::Scenes) {
-                    next = (panelController.getActiveSceneIndex() + 1) % panelController.getSceneCount();
-                    panelController.selectScene(next);
-                }
-            }
-
-            if (md == MenuDirection::Up) {
-                if(panelController.getCurrentPage() == MenuPage::Main) {
-                    previous = (panelController.getActiveMainIndex() + panelController.getMainCount() - 1) % panelController.getMainCount();
-                    panelController.selectMain(previous);
-                }
-
-                if(panelController.getCurrentPage() == MenuPage::Scenes) {
-                    previous = (panelController.getActiveSceneIndex() + panelController.getSceneCount() - 1) % panelController.getSceneCount();
-                    panelController.selectScene(previous);
-                }
-            }
-            if (md == MenuDirection::Right) {
-                if(panelController.getMainName(panelController.getActiveMainIndex()) == "SCENE") {
-                  panelController.setCurrentPage(MenuPage::Scenes);
-                }
-            }
-            if (md == MenuDirection::Left) {
-                panelController.setCurrentPage(MenuPage::Main);
+            MenuAction action = panelMenu.processPose(packet, panelController);
+            if (action.type == MenuActionType::SelectScene) {
+                panelController.selectScene(static_cast<uint8_t>(action.value));
             }
         }
 
         // Process any gestures
         if (panelRadio.processPacket(packet, event)) {
-            //Serial.print(F("Event # ")); Serial.println(event.eventSequence);
             panelController.processGesture(event);
         }
     }
