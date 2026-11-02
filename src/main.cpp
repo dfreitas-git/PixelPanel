@@ -54,6 +54,7 @@ dlf  9/22/2026
 #include "CheckerBoardScene.h"
 #include "EyeballScene.h"
 #include "Pacman1Scene.h"
+#include "TestScene.h"
 
 
 PanelRadio panelRadio;
@@ -76,6 +77,7 @@ FireworksScene fireworksScene(gAnim);
 CheckerBoardScene checkerBoardScene(gAnim);
 EyeballScene eyeballScene(gAnim);
 Pacman1Scene pacman1Scene(gAnim);
+TestScene testScene(testPanel);
 
 PanelController panelController;
 PanelMenu panelMenu(gPrim);
@@ -153,8 +155,16 @@ void loop()
         // PanelMenu owns navigation and hierarchy. Execute only its requests.
         if (packet.mode == WandMode::Panel) {
             MenuAction action = panelMenu.processPose(packet, panelController);
-            if (action.type == MenuActionType::SelectScene) {
+
+            switch (action.type) {
+            case MenuActionType::SelectScene:
                 panelController.selectScene(static_cast<uint8_t>(action.value));
+                break;
+
+            case MenuActionType::SelectTest:
+                testScene.setPattern( static_cast<TestPattern>(action.value));
+                panelController.setActiveScene(testScene);
+                break;
             }
         }
 

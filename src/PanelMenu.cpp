@@ -8,7 +8,7 @@ namespace {
     // These two lists are placeholders for future action handling.
     const char* const PANEL_ITEMS[] = { "BRITE", "DIFFD" };
     const char* const TEST_ITEMS[]  = {
-        "CORNR", "ROWS", "COLS", "BAND", "COLOR", "PIXEL", "DIAG", "ALL"
+        "CORNR", "ROWS", "COLS", "BAND", "COLOR", "PIXEL", "DIAG"
     };
 
     constexpr uint8_t MAIN_COUNT  = sizeof(MAIN_ITEMS)  / sizeof(MAIN_ITEMS[0]);
@@ -115,11 +115,22 @@ MenuAction PanelMenu::processPose(const WandPacket& packet, const PanelControlle
             action.type = MenuActionType::SelectScene;
             action.value = page.selectedIndex;
         }
+        if (currentPage == MenuPage::Test) {
+            action.type = MenuActionType::SelectTest;
+            action.value = page.selectedIndex;
+        }
     } else if (direction == MenuDirection::Right && currentPage == MenuPage::Main) {
         switch (page.selectedIndex) {
-            case 0: changePage(MenuPage::Scenes, controller); break;
+            case 0: changePage(MenuPage::Scenes, controller);
+                    // Need to set action back to scene in case we're coming back from displaying test scenes
+                    action.type = MenuActionType::SelectScene;
+                    action.value = state(MenuPage::Scenes).selectedIndex;
+                    break;
             case 1: changePage(MenuPage::Panel, controller); break;
-            case 2: changePage(MenuPage::Test, controller); break;
+            case 2: changePage(MenuPage::Test, controller);
+                    action.type = MenuActionType::SelectTest;
+                    action.value = state(MenuPage::Test).selectedIndex;
+                    break;
         }
     } else if (direction == MenuDirection::Left && currentPage != MenuPage::Main) {
         changePage(MenuPage::Main, controller);

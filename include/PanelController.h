@@ -18,6 +18,7 @@ public:
     WandMode getMode() const { return currentMode; }
     uint8_t getSceneCount() const { return sceneCount; }
     uint8_t getActiveSceneIndex() const { return activeSceneIndex; }
+    void setActiveScene(Scene& scene);
     const char* getSceneName(uint8_t index) const;
 
 private:

@@ -11,12 +11,20 @@ void PanelController::addScene(Scene& scene) {
         scenes[sceneCount++] = &scene;
 }
 
-void PanelController::selectScene(uint8_t index) {
-    if (index >= sceneCount) return;
-    if (activeScene != nullptr && activeSceneIndex == index) return;
+void PanelController::selectScene(uint8_t index)
+{
+    if (index >= sceneCount)
+        return;
 
     activeSceneIndex = index;
-    activeScene = scenes[index];
+    setActiveScene(*scenes[index]);
+}
+
+void PanelController::setActiveScene(Scene& scene) {
+    if (activeScene == &scene)
+        return;
+
+    activeScene = &scene;
     activeScene->begin();
 }
 

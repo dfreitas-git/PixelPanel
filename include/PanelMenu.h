@@ -26,9 +26,9 @@ enum class MenuDirection : uint8_t {
 enum class MenuActionType : uint8_t {
     None,
     SelectScene,
+    SelectTest,
     SetBrightness, // Reserved for future PANEL functions
     SetDiffuser,
-    RunTest
 };
 
 struct MenuAction {
