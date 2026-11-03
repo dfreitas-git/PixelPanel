@@ -114,16 +114,16 @@ void setup()
     }
 
     // Register the scenes and select the default
-    panelController.addScene(shootingStarsScene);
-    panelController.addScene(fireworksScene);
-    panelController.addScene(checkerBoardScene);
-    panelController.addScene(eyeballScene);
-    panelController.addScene(pacman1Scene);
+    panelController.addScene(shootingStarsScene);  // index0
+    panelController.addScene(fireworksScene);      // index1
+    panelController.addScene(checkerBoardScene);   // index2
+    panelController.addScene(eyeballScene);        // index3
+    panelController.addScene(pacman1Scene);        // index4
 
-    panelController.selectScene(0);
+    panelController.selectScene(0);   // Start with shootingStars
 
     framebuffer.clear();
-    pixelOutput.show(framebuffer);
+    pixelOutput.show( framebuffer, panelController.getBrightnessScale());
 
 }
 
@@ -157,13 +157,17 @@ void loop()
             MenuAction action = panelMenu.processPose(packet, panelController);
 
             switch (action.type) {
-            case MenuActionType::SelectScene:
+              case MenuActionType::SelectScene:
                 panelController.selectScene(static_cast<uint8_t>(action.value));
                 break;
 
-            case MenuActionType::SelectTest:
+              case MenuActionType::SelectTest:
                 testScene.setPattern( static_cast<TestPattern>(action.value));
                 panelController.setActiveScene(testScene);
+                break;
+
+              case MenuActionType::SetBrightness:
+                panelController.setBrightnessScale(action.value);
                 break;
             }
         }
@@ -193,7 +197,7 @@ void loop()
         panelMenu.render(framebuffer, panelController);
     }
 
-    // Output whichever mode rendered the framebuffer
-    pixelOutput.show(framebuffer);
+    // Output whichever mode rendered the framebuffer.  Send current brightness scaling
+    pixelOutput.show( framebuffer, panelController.getBrightnessScale());
 
 }

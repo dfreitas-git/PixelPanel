@@ -36,8 +36,8 @@ MenuAction PanelMenu::selectionAction() const
                 targetPage = MenuPage::Test;
                 break;
 
-            default:
-                return action;  // PANEL: no scene change
+            default:  // PANEL: no scene change
+                return action;  
         }
     }
 
@@ -59,10 +59,6 @@ MenuAction PanelMenu::selectionAction() const
 
     return action;
 }
-
-
-
-
 
 uint8_t PanelMenu::itemCount(MenuPage page, const PanelController& controller) const {
     switch (page) {
@@ -112,7 +108,14 @@ MenuDirection PanelMenu::processNavigationPose(const WandPacket& packet) {
         if (horizontal) return MenuDirection::None;
 
         // Up/down scrolls items: immediate first step, then key-repeat.
-        const uint32_t interval = repeatStarted ? REPEAT_MS : INITIAL_REPEAT_MS;
+        // Hase two speeds of repeat depending on the pitch angle.
+        uint32_t interval;
+        if(repeatStarted) {
+            interval = fabsf(pitch) > FAST_ENGAGE_ANGLE_PITCH ? FAST_REPEAT_MS : REPEAT_MS;
+        } else {
+            interval = INITIAL_REPEAT_MS;
+        }
+
         if (now - lastStepMs >= interval) {
             lastStepMs = now;
             repeatStarted = true;
@@ -141,9 +144,39 @@ void PanelMenu::changePage(MenuPage page, const PanelController& controller) {
         // Synchronize with the scene that is actually selected.
         state(page).selectedIndex = controller.getActiveSceneIndex();
     }
+
     // Do not reset the navigator here: the user must release the roll
     // before another left/right page transition is accepted.
 }
+
+
+MenuAction PanelMenu::adjustValue(MenuDirection direction)
+{
+    MenuAction action{};
+
+    const int increment =
+        (direction == MenuDirection::Up) ? 1 : -1;
+
+    switch (state(MenuPage::Panel).selectedIndex) {
+
+        case 0:  // BRITE
+            brightness = constrain(brightness + increment, 0, 100);
+
+            action.type = MenuActionType::SetBrightness;
+            action.value = brightness;
+            break;
+
+        case 1:  // DIFFD
+            diffuserOffset = constrain(diffuserOffset + increment, 0, 100);
+
+            action.type = MenuActionType::SetDiffuser;
+            action.value = diffuserOffset;
+            break;
+    }
+
+    return action;
+}
+
 
 MenuAction PanelMenu::processPose(const WandPacket& packet, const PanelController& controller) {
     MenuAction action{};
@@ -152,14 +185,26 @@ MenuAction PanelMenu::processPose(const WandPacket& packet, const PanelControlle
     const uint8_t count = itemCount(currentPage, controller);
 
     if (direction == MenuDirection::Up || direction == MenuDirection::Down) {
-        if (count == 0) return action;
+        if (currentView == MenuView::Value) {
 
-        if (direction == MenuDirection::Down)
-            page.selectedIndex = (page.selectedIndex + 1) % count;
-        else
-            page.selectedIndex = (page.selectedIndex + count - 1) % count;
+            // Adjust the currently selected parameter
+            action = adjustValue(direction);
 
-        action = selectionAction();
+        } else {
+
+            // Existing list navigation
+            if (count == 0)
+                return action;
+
+            if (direction == MenuDirection::Down)
+                page.selectedIndex = (page.selectedIndex + 1) % count;
+            else
+                page.selectedIndex = (page.selectedIndex + count - 1) % count;
+
+            action = selectionAction();
+        }
+
+    // if right, push into sub menu page
     } else if (direction == MenuDirection::Right && currentPage == MenuPage::Main) {
         switch (page.selectedIndex) {
             case 0: changePage(MenuPage::Scenes, controller);
@@ -170,8 +215,20 @@ MenuAction PanelMenu::processPose(const WandPacket& packet, const PanelControlle
                 action = selectionAction();
                 break;
         }
+    } else if (direction == MenuDirection::Right && currentPage == MenuPage::Panel) {
+        currentView = MenuView::Value;
+
     } else if (direction == MenuDirection::Left && currentPage != MenuPage::Main) {
-        changePage(MenuPage::Main, controller);
+        if (currentView == MenuView::Value) {
+
+            // Exit value editor, return to PANEL list
+            currentView = MenuView::List;
+
+        } else if (currentPage != MenuPage::Main) {
+
+            // Exit submenu, return to MAIN
+            changePage(MenuPage::Main, controller);
+        }
     }
     return action;
 }
@@ -189,8 +246,61 @@ void PanelMenu::updateVisibleWindow(PageState& page, uint8_t count) {
         page.firstVisibleIndex = page.selectedIndex - VISIBLE_ROWS + 1;
 }
 
+void PanelMenu::renderValue(PixelFramebuffer& framebuffer)
+{
+    const uint8_t selected = state(MenuPage::Panel).selectedIndex;
+    const char* name = "";
+
+    int value = 0;
+
+    switch (selected) {
+
+        case 0:
+            name = "BRITE";
+            value = brightness;
+            break;
+
+        case 1:
+            name = "DIFFD";
+            value = diffuserOffset;
+            break;
+
+        default:
+            return;
+    }
+
+    char valueString[8];
+    snprintf(valueString, sizeof(valueString), "%d", value);
+
+    const RGB labelColor = {20, 20, 20};
+    const RGB valueColor = {0, 100, 0};
+    const RGB background = {0, 0, 0};
+
+    gPrim.drawString(
+        framebuffer.data(),
+        name,
+        0, 20,
+        labelColor,
+        background
+    );
+
+    gPrim.drawString(
+        framebuffer.data(),
+        valueString,
+        7, 10,
+        valueColor,
+        background
+    );
+}
+
 void PanelMenu::render(PixelFramebuffer& framebuffer, const PanelController& controller) {
     framebuffer.clear();
+
+    if (currentView == MenuView::Value) {
+        renderValue(framebuffer);
+        return;
+    }
+
     const uint8_t count = itemCount(currentPage, controller);
     if (count == 0) return;
 

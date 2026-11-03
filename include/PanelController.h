@@ -21,7 +21,16 @@ public:
     void setActiveScene(Scene& scene);
     const char* getSceneName(uint8_t index) const;
 
+    void setBrightnessScale(uint8_t value) {
+        brightnessScale = constrain(value, 0, 100);
+    }
+
+    uint8_t getBrightnessScale() const {
+        return brightnessScale;
+    }
+
 private:
+    uint8_t brightnessScale = 100;
     uint8_t sceneCount = 0;
     uint8_t activeSceneIndex = 0;
     Scene* scenes[MAX_SCENES]{};

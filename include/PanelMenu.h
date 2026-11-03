@@ -15,6 +15,12 @@ enum class MenuPage : uint8_t {
     Count
 };
 
+enum class MenuView {
+    List,
+    Value
+};
+
+
 enum class MenuDirection : uint8_t {
     None,
     Left,
@@ -27,7 +33,7 @@ enum class MenuActionType : uint8_t {
     None,
     SelectScene,
     SelectTest,
-    SetBrightness, // Reserved for future PANEL functions
+    SetBrightness, 
     SetDiffuser,
 };
 
@@ -45,6 +51,7 @@ public:
 
     void resetNavigation();
     void render(PixelFramebuffer& framebuffer, const PanelController& controller);
+    void renderValue(PixelFramebuffer& framebuffer);
 
     MenuPage getCurrentPage() const { return currentPage; }
 
@@ -56,6 +63,7 @@ private:
 
     GraphicsPrimitives& gPrim;
     MenuPage currentPage = MenuPage::Main;
+    MenuView currentView = MenuView::List;
     PageState pageState[static_cast<uint8_t>(MenuPage::Count)]{};
 
     static constexpr uint8_t VISIBLE_ROWS = 4;
@@ -64,12 +72,16 @@ private:
     uint32_t lastStepMs = 0;
     bool repeatStarted = false;
 
-    static constexpr float ENGAGE_ANGLE_PITCH  = 15.0f * PI / 180.0f;
-    static constexpr float RELEASE_ANGLE_PITCH = 10.0f * PI / 180.0f;
-    static constexpr float ENGAGE_ANGLE_ROLL   = 28.0f * PI / 180.0f;
-    static constexpr float RELEASE_ANGLE_ROLL  = 20.0f * PI / 180.0f;
+    static constexpr float ENGAGE_ANGLE_PITCH  = 20.0f * PI / 180.0f;
+    static constexpr float RELEASE_ANGLE_PITCH = 15.0f * PI / 180.0f;
+    static constexpr float ENGAGE_ANGLE_ROLL   = 20.0f * PI / 180.0f;
+    static constexpr float RELEASE_ANGLE_ROLL  = 15.0f * PI / 180.0f;
+    static constexpr float FAST_ENGAGE_ANGLE_PITCH  = 45.0f * PI / 180.0f;
+    static constexpr float FAST_RELEASE_ANGLE_PITCH = 40.0f * PI / 180.0f;
+
     static constexpr uint32_t INITIAL_REPEAT_MS = 500;
     static constexpr uint32_t REPEAT_MS = 300;
+    static constexpr uint32_t FAST_REPEAT_MS = 100;
 
     PageState& state(MenuPage page) {
         return pageState[static_cast<uint8_t>(page)];
@@ -84,4 +96,7 @@ private:
     const char* itemName(MenuPage page, uint8_t index, const PanelController& controller) const;
     void updateVisibleWindow(PageState& page, uint8_t count);
     MenuAction selectionAction() const;
+    MenuAction adjustValue(MenuDirection direction);
+    uint8_t brightness = 100;
+    uint8_t diffuserOffset = 50;
 };

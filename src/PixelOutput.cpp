@@ -78,8 +78,9 @@ void PixelOutput::mapPixel(
     }
 }
 
+
 // Send the framebuffer to the display via 5 RMT channels
-void PixelOutput::show(const PixelFramebuffer &framebuffer)
+void PixelOutput::show(const PixelFramebuffer &framebuffer, uint8_t brightnessScale)
 {
     // Convert the Cartesian framebuffer into five physical
     // GRB byte streams, one for each RMT channel.
@@ -95,11 +96,12 @@ void PixelOutput::show(const PixelFramebuffer &framebuffer)
 
             uint16_t byteIndex = ledIndex * 3;
 
-            outputBuffer[channel][byteIndex + 0] = pixel.g;
-            outputBuffer[channel][byteIndex + 1] = pixel.r;
-            outputBuffer[channel][byteIndex + 2] = pixel.b;
+            outputBuffer[channel][byteIndex + 0] = uint16_t(pixel.g) * brightnessScale / 100;
+            outputBuffer[channel][byteIndex + 1] = uint16_t(pixel.r) * brightnessScale / 100;
+            outputBuffer[channel][byteIndex + 2] = uint16_t(pixel.b) * brightnessScale / 100;
         }
     }
+
     // Start all five channels without waiting for each
     // preceding channel to finish.
     for (uint8_t channel = 0;

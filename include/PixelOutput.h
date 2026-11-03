@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "PixelFramebuffer.h"
+#include "PanelController.h"
 #include <driver/rmt.h>
 
 class PixelOutput {
@@ -12,7 +13,7 @@ public:
     static constexpr uint16_t LEDS_PER_CHANNEL = PANEL_WIDTH * ROWS_PER_CHANNEL;          // 180
 
     bool begin();
-    void show(const PixelFramebuffer &framebuffer);
+    void show(const PixelFramebuffer &framebuffer, uint8_t brightnessScale);
 
 private:
     static constexpr uint8_t OUTPUT_PINS[NUM_CHANNELS] = { 18, 19, 25, 26, 27 };
