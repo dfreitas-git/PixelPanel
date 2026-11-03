@@ -83,4 +83,5 @@ private:
     uint8_t itemCount(MenuPage page, const PanelController& controller) const;
     const char* itemName(MenuPage page, uint8_t index, const PanelController& controller) const;
     void updateVisibleWindow(PageState& page, uint8_t count);
+    MenuAction selectionAction() const;
 };

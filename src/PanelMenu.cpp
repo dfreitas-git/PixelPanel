@@ -16,6 +16,54 @@ namespace {
     constexpr uint8_t TEST_COUNT  = sizeof(TEST_ITEMS)  / sizeof(TEST_ITEMS[0]);
 }
 
+MenuAction PanelMenu::selectionAction() const
+{
+    MenuAction action{};
+
+    MenuPage targetPage = currentPage;
+
+    // When on MAIN, the highlighted item determines
+    // which scene category should be active.
+    if (currentPage == MenuPage::Main) {
+
+        switch (state(MenuPage::Main).selectedIndex) {
+
+            case 0:  // SCENE
+                targetPage = MenuPage::Scenes;
+                break;
+
+            case 2:  // TEST
+                targetPage = MenuPage::Test;
+                break;
+
+            default:
+                return action;  // PANEL: no scene change
+        }
+    }
+
+    switch (targetPage) {
+
+        case MenuPage::Scenes:
+            action.type = MenuActionType::SelectScene;
+            action.value = state(MenuPage::Scenes).selectedIndex;
+            break;
+
+        case MenuPage::Test:
+            action.type = MenuActionType::SelectTest;
+            action.value = state(MenuPage::Test).selectedIndex;
+            break;
+
+        default:
+            break;
+    }
+
+    return action;
+}
+
+
+
+
+
 uint8_t PanelMenu::itemCount(MenuPage page, const PanelController& controller) const {
     switch (page) {
         case MenuPage::Main:   return MAIN_COUNT;
@@ -111,26 +159,16 @@ MenuAction PanelMenu::processPose(const WandPacket& packet, const PanelControlle
         else
             page.selectedIndex = (page.selectedIndex + count - 1) % count;
 
-        if (currentPage == MenuPage::Scenes) {
-            action.type = MenuActionType::SelectScene;
-            action.value = page.selectedIndex;
-        }
-        if (currentPage == MenuPage::Test) {
-            action.type = MenuActionType::SelectTest;
-            action.value = page.selectedIndex;
-        }
+        action = selectionAction();
     } else if (direction == MenuDirection::Right && currentPage == MenuPage::Main) {
         switch (page.selectedIndex) {
             case 0: changePage(MenuPage::Scenes, controller);
-                    // Need to set action back to scene in case we're coming back from displaying test scenes
-                    action.type = MenuActionType::SelectScene;
-                    action.value = state(MenuPage::Scenes).selectedIndex;
-                    break;
+                action = selectionAction();
+                break;
             case 1: changePage(MenuPage::Panel, controller); break;
             case 2: changePage(MenuPage::Test, controller);
-                    action.type = MenuActionType::SelectTest;
-                    action.value = state(MenuPage::Test).selectedIndex;
-                    break;
+                action = selectionAction();
+                break;
         }
     } else if (direction == MenuDirection::Left && currentPage != MenuPage::Main) {
         changePage(MenuPage::Main, controller);
