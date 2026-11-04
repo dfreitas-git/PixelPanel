@@ -1,8 +1,7 @@
 #include "PanelController.h"
 
 void PanelController::processPose(const WandPacket& packet) {
-    currentMode = packet.mode;
-    if (currentMode == WandMode::Scene && activeScene)
+    if (activeScene)
         activeScene->processPose(packet);
 }
 
@@ -33,8 +32,8 @@ const char* PanelController::getSceneName(uint8_t index) const {
 }
 
 void PanelController::processGesture(const GestureEvent& event) {
-    // Menu gestures are deliberately not routed here. PanelMenu owns them.
-    if (event.mode == WandMode::Scene && activeScene)
+    // Caller only invokes this while a scene is displayed.
+    if (activeScene)
         activeScene->processGesture(event);
 }
 

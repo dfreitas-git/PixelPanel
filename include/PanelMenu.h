@@ -17,14 +17,13 @@ enum class MenuPage : uint8_t {
 
 enum class MenuView {
     List,
-    Value
+    Value,
+    Scene  // A running animation or test; back returns to its list
 };
 
 
 enum class MenuDirection : uint8_t {
     None,
-    Left,
-    Right,
     Up,
     Down
 };
@@ -48,6 +47,9 @@ public:
 
     // Returns an action only when the menu asks the application to do something.
     MenuAction processPose(const WandPacket& packet, const PanelController& controller);
+    MenuAction push(const PanelController& controller);  // Single-click
+    void pop();                                         // Double-click
+    bool isRunningScene() const { return currentView == MenuView::Scene; }
 
     void resetNavigation();
     void render(PixelFramebuffer& framebuffer, const PanelController& controller);
@@ -71,13 +73,11 @@ private:
     MenuDirection heldDirection = MenuDirection::None;
     uint32_t lastStepMs = 0;
     bool repeatStarted = false;
+    bool navigationArmed = false; // Require neutral pitch after a push/pop
 
     static constexpr float ENGAGE_ANGLE_PITCH  = 20.0f * PI / 180.0f;
     static constexpr float RELEASE_ANGLE_PITCH = 15.0f * PI / 180.0f;
-    static constexpr float ENGAGE_ANGLE_ROLL   = 20.0f * PI / 180.0f;
-    static constexpr float RELEASE_ANGLE_ROLL  = 15.0f * PI / 180.0f;
     static constexpr float FAST_ENGAGE_ANGLE_PITCH  = 45.0f * PI / 180.0f;
-    static constexpr float FAST_RELEASE_ANGLE_PITCH = 40.0f * PI / 180.0f;
 
     static constexpr uint32_t INITIAL_REPEAT_MS = 500;
     static constexpr uint32_t REPEAT_MS = 300;
@@ -95,7 +95,6 @@ private:
     uint8_t itemCount(MenuPage page, const PanelController& controller) const;
     const char* itemName(MenuPage page, uint8_t index, const PanelController& controller) const;
     void updateVisibleWindow(PageState& page, uint8_t count);
-    MenuAction selectionAction() const;
     MenuAction adjustValue(MenuDirection direction);
     uint8_t brightness = 100;
     uint8_t diffuserOffset = 50;

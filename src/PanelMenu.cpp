@@ -16,50 +16,6 @@ namespace {
     constexpr uint8_t TEST_COUNT  = sizeof(TEST_ITEMS)  / sizeof(TEST_ITEMS[0]);
 }
 
-MenuAction PanelMenu::selectionAction() const
-{
-    MenuAction action{};
-
-    MenuPage targetPage = currentPage;
-
-    // When on MAIN, the highlighted item determines
-    // which scene category should be active.
-    if (currentPage == MenuPage::Main) {
-
-        switch (state(MenuPage::Main).selectedIndex) {
-
-            case 0:  // SCENE
-                targetPage = MenuPage::Scenes;
-                break;
-
-            case 2:  // TEST
-                targetPage = MenuPage::Test;
-                break;
-
-            default:  // PANEL: no scene change
-                return action;  
-        }
-    }
-
-    switch (targetPage) {
-
-        case MenuPage::Scenes:
-            action.type = MenuActionType::SelectScene;
-            action.value = state(MenuPage::Scenes).selectedIndex;
-            break;
-
-        case MenuPage::Test:
-            action.type = MenuActionType::SelectTest;
-            action.value = state(MenuPage::Test).selectedIndex;
-            break;
-
-        default:
-            break;
-    }
-
-    return action;
-}
-
 uint8_t PanelMenu::itemCount(MenuPage page, const PanelController& controller) const {
     switch (page) {
         case MenuPage::Main:   return MAIN_COUNT;
@@ -85,37 +41,41 @@ void PanelMenu::resetNavigation() {
     heldDirection = MenuDirection::None;
     repeatStarted = false;
     lastStepMs = 0;
+    navigationArmed = false;
 }
 
+// Pitch-only navigator. Roll is ignored completely.
+// Following push/pop, pitch must return to neutral before navigating again.
 MenuDirection PanelMenu::processNavigationPose(const WandPacket& packet) {
-    const float roll = packet.roll;
     const float pitch = packet.pitch;
     const uint32_t now = millis();
 
-    if (heldDirection != MenuDirection::None) {
-        const bool horizontal = (heldDirection == MenuDirection::Left ||
-                                 heldDirection == MenuDirection::Right);
-        const bool released = horizontal
-            ? fabsf(roll) < RELEASE_ANGLE_ROLL
-            : fabsf(pitch) < RELEASE_ANGLE_PITCH;
+    if (!navigationArmed) {
+        if (fabsf(pitch) < RELEASE_ANGLE_PITCH)
+            navigationArmed = true;
+        return MenuDirection::None;
+    }
 
-        if (released) {
+    if (heldDirection != MenuDirection::None) {
+        if (fabsf(pitch) < RELEASE_ANGLE_PITCH) {
+            heldDirection = MenuDirection::None;
+            repeatStarted = false;
+            return MenuDirection::None;
+        }
+
+        // If the user reverses direction without first returning to neutral,
+        // release the old direction, then require neutral before rearming.
+        if ((heldDirection == MenuDirection::Up && pitch < 0) ||
+            (heldDirection == MenuDirection::Down && pitch > 0)) {
             resetNavigation();
             return MenuDirection::None;
         }
 
-        // Left/right changes menu LEVEL, so it is deliberately one-shot.
-        if (horizontal) return MenuDirection::None;
-
-        // Up/down scrolls items: immediate first step, then key-repeat.
-        // Hase two speeds of repeat depending on the pitch angle.
-        uint32_t interval;
-        if(repeatStarted) {
-            interval = fabsf(pitch) > FAST_ENGAGE_ANGLE_PITCH ? FAST_REPEAT_MS : REPEAT_MS;
-        } else {
-            interval = INITIAL_REPEAT_MS;
+        uint32_t interval = INITIAL_REPEAT_MS;
+        if (repeatStarted) {
+            interval = fabsf(pitch) > FAST_ENGAGE_ANGLE_PITCH
+                ? FAST_REPEAT_MS : REPEAT_MS;
         }
-
         if (now - lastStepMs >= interval) {
             lastStepMs = now;
             repeatStarted = true;
@@ -124,13 +84,8 @@ MenuDirection PanelMenu::processNavigationPose(const WandPacket& packet) {
         return MenuDirection::None;
     }
 
-    if (fabsf(roll) > ENGAGE_ANGLE_ROLL && fabsf(roll) >= fabsf(pitch)) {
-        heldDirection = roll > 0 ? MenuDirection::Right : MenuDirection::Left;
-    } else if (fabsf(pitch) > ENGAGE_ANGLE_PITCH) {
+    if (fabsf(pitch) > ENGAGE_ANGLE_PITCH) {
         heldDirection = pitch > 0 ? MenuDirection::Up : MenuDirection::Down;
-    }
-
-    if (heldDirection != MenuDirection::None) {
         lastStepMs = now;
         repeatStarted = false;
         return heldDirection;
@@ -141,12 +96,55 @@ MenuDirection PanelMenu::processNavigationPose(const WandPacket& packet) {
 void PanelMenu::changePage(MenuPage page, const PanelController& controller) {
     currentPage = page;
     if (page == MenuPage::Scenes) {
-        // Synchronize with the scene that is actually selected.
         state(page).selectedIndex = controller.getActiveSceneIndex();
     }
+    resetNavigation();
+}
 
-    // Do not reset the navigator here: the user must release the roll
-    // before another left/right page transition is accepted.
+// One click means "enter highlighted item".
+// Only entering an animation/test requests an application action.
+MenuAction PanelMenu::push(const PanelController& controller) {
+    MenuAction action{};
+    if (currentView != MenuView::List) return action;
+
+    const PageState& page = state(currentPage);
+    if (currentPage == MenuPage::Main) {
+        switch (page.selectedIndex) {
+            case 0: changePage(MenuPage::Scenes, controller); break;
+            case 1: changePage(MenuPage::Panel, controller); break;
+            case 2: changePage(MenuPage::Test, controller); break;
+        }
+    } else if (currentPage == MenuPage::Scenes) {
+        if (page.selectedIndex < controller.getSceneCount()) {
+            action.type = MenuActionType::SelectScene;
+            action.value = page.selectedIndex;
+            currentView = MenuView::Scene;
+            resetNavigation();
+        }
+    } else if (currentPage == MenuPage::Test) {
+        if (page.selectedIndex < TEST_COUNT) {
+            action.type = MenuActionType::SelectTest;
+            action.value = page.selectedIndex;
+            currentView = MenuView::Scene;
+            resetNavigation();
+        }
+    } else if (currentPage == MenuPage::Panel) {
+        if (page.selectedIndex < PANEL_COUNT) {
+            currentView = MenuView::Value;
+            resetNavigation();
+        }
+    }
+    return action;
+}
+
+void PanelMenu::pop() {
+    if (currentView != MenuView::List) {
+        // Scene -> its list, or Value -> PANEL list.
+        currentView = MenuView::List;
+    } else if (currentPage != MenuPage::Main) {
+        currentPage = MenuPage::Main;
+    }
+    resetNavigation();
 }
 
 
@@ -180,56 +178,25 @@ MenuAction PanelMenu::adjustValue(MenuDirection direction)
 
 MenuAction PanelMenu::processPose(const WandPacket& packet, const PanelController& controller) {
     MenuAction action{};
+    if (isRunningScene()) return action; // Pose belongs to the running scene instead.
+
     const MenuDirection direction = processNavigationPose(packet);
+    if (direction == MenuDirection::None) return action;
+
+    if (currentView == MenuView::Value) {
+        return adjustValue(direction);
+    }
+
     PageState& page = state(currentPage);
     const uint8_t count = itemCount(currentPage, controller);
+    if (count == 0) return action;
 
-    if (direction == MenuDirection::Up || direction == MenuDirection::Down) {
-        if (currentView == MenuView::Value) {
+    if (direction == MenuDirection::Down)
+        page.selectedIndex = (page.selectedIndex + 1) % count;
+    else
+        page.selectedIndex = (page.selectedIndex + count - 1) % count;
 
-            // Adjust the currently selected parameter
-            action = adjustValue(direction);
-
-        } else {
-
-            // Existing list navigation
-            if (count == 0)
-                return action;
-
-            if (direction == MenuDirection::Down)
-                page.selectedIndex = (page.selectedIndex + 1) % count;
-            else
-                page.selectedIndex = (page.selectedIndex + count - 1) % count;
-
-            action = selectionAction();
-        }
-
-    // if right, push into sub menu page
-    } else if (direction == MenuDirection::Right && currentPage == MenuPage::Main) {
-        switch (page.selectedIndex) {
-            case 0: changePage(MenuPage::Scenes, controller);
-                action = selectionAction();
-                break;
-            case 1: changePage(MenuPage::Panel, controller); break;
-            case 2: changePage(MenuPage::Test, controller);
-                action = selectionAction();
-                break;
-        }
-    } else if (direction == MenuDirection::Right && currentPage == MenuPage::Panel) {
-        currentView = MenuView::Value;
-
-    } else if (direction == MenuDirection::Left && currentPage != MenuPage::Main) {
-        if (currentView == MenuView::Value) {
-
-            // Exit value editor, return to PANEL list
-            currentView = MenuView::List;
-
-        } else if (currentPage != MenuPage::Main) {
-
-            // Exit submenu, return to MAIN
-            changePage(MenuPage::Main, controller);
-        }
-    }
+    // Highlighting is not selection. A single-click (push) activates an item.
     return action;
 }
 
@@ -295,6 +262,8 @@ void PanelMenu::renderValue(PixelFramebuffer& framebuffer)
 
 void PanelMenu::render(PixelFramebuffer& framebuffer, const PanelController& controller) {
     framebuffer.clear();
+
+    if (currentView == MenuView::Scene) return; // Normally rendered by PanelController.
 
     if (currentView == MenuView::Value) {
         renderValue(framebuffer);

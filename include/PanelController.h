@@ -15,7 +15,6 @@ public:
     void processGesture(const GestureEvent& event);
     void renderScene(PixelFramebuffer& framebuffer);
 
-    WandMode getMode() const { return currentMode; }
     uint8_t getSceneCount() const { return sceneCount; }
     uint8_t getActiveSceneIndex() const { return activeSceneIndex; }
     void setActiveScene(Scene& scene);
@@ -35,5 +34,4 @@ private:
     uint8_t activeSceneIndex = 0;
     Scene* scenes[MAX_SCENES]{};
     Scene* activeScene = nullptr;
-    WandMode currentMode = WandMode::Scene;
 };

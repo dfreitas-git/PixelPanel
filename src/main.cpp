@@ -85,6 +85,28 @@ PanelMenu panelMenu(gPrim);
 constexpr uint16_t DIFFUSER_UPDATE_TIME = 200;  // ms between reading diffuser setting pot
 uint16_t lastDiffuserUpdate = 0;
 
+// Application coordinator: menu requests do not directly manipulate hardware.
+void applyMenuAction(const MenuAction& action)
+{
+    switch (action.type) {
+        case MenuActionType::SelectScene:
+            panelController.selectScene(static_cast<uint8_t>(action.value));
+            break;
+        case MenuActionType::SelectTest:
+            testScene.setPattern(static_cast<TestPattern>(action.value));
+            panelController.setActiveScene(testScene);
+            break;
+        case MenuActionType::SetBrightness:
+            panelController.setBrightnessScale(static_cast<uint8_t>(action.value));
+            break;
+        case MenuActionType::SetDiffuser:
+            // Existing setting is a menu-side placeholder; wire up later.
+            break;
+        default:
+            break;
+    }
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -140,60 +162,43 @@ void loop()
     GestureEvent event;
 
     while (panelRadio.getNextPacket(packet)) {
+        // Button events and scene gestures share the existing event-sequence
+        // deduplication. Buttons must be encoded by the wand in the gesture
+        // field (see shared WandProtocol.h and integration notes).
+        const bool hasEvent = panelRadio.processPacket(packet, event);
 
-        WandMode previousMode = panelController.getMode();
-
-        // Process continuous pose/motion data using packet.roll, packet.pitch, etc.
-        panelController.processPose(packet);
-
-        // When we go into panel mode, reset navigation direction state in case we exited
-        // panel mode last time while in a L/R/U/D state
-        if (previousMode != panelController.getMode() && panelController.getMode() == WandMode::Panel) {
-            panelMenu.resetNavigation();
+        if (hasEvent && event.gesture == WandGesture::ButtonSingle) {
+            MenuAction action = panelMenu.push(panelController);
+            applyMenuAction(action);
         }
-
-        // PanelMenu owns navigation and hierarchy. Execute only its requests.
-        if (packet.mode == WandMode::Panel) {
-            MenuAction action = panelMenu.processPose(packet, panelController);
-
-            switch (action.type) {
-              case MenuActionType::SelectScene:
-                panelController.selectScene(static_cast<uint8_t>(action.value));
-                break;
-
-              case MenuActionType::SelectTest:
-                testScene.setPattern( static_cast<TestPattern>(action.value));
-                panelController.setActiveScene(testScene);
-                break;
-
-              case MenuActionType::SetBrightness:
-                panelController.setBrightnessScale(action.value);
-                break;
-            }
+        else if (hasEvent && event.gesture == WandGesture::ButtonDouble) {
+            panelMenu.pop();
         }
-
-        // Process any gestures
-        if (panelRadio.processPacket(packet, event)) {
+        else if (hasEvent && panelMenu.isRunningScene()) {
             panelController.processGesture(event);
         }
+
+        // Continuous pose goes to exactly one destination.
+        if (panelMenu.isRunningScene()) {
+            panelController.processPose(packet);
+        } else {
+            MenuAction action = panelMenu.processPose(packet, panelController);
+            applyMenuAction(action);
+        }
     }
 
-    // Clear the framebuffer so we don't have residual bits from a previous scene
-    // Technically we would only need to do this if the last scene and current scene
-    // changed, but this is simple and safe since we always switch modes when changing a scene
-    static WandMode lastMode = WandMode::Scene;
-    WandMode mode = panelController.getMode();
-    if (mode != lastMode) {
+    // Clearing prevents trails from an animation leaking into the menu,
+    // or old menu text leaking into a newly activated animation.
+    static bool wasRunningScene = false;
+    const bool runningScene = panelMenu.isRunningScene();
+    if (runningScene != wasRunningScene) {
         framebuffer.clear();
-        lastMode = mode;
+        wasRunningScene = runningScene;
     }
 
-    // Scene mode
-    if (panelController.getMode() == WandMode::Scene) {
+    if (runningScene) {
         panelController.renderScene(framebuffer);
-    }
-    // Panel mode
-    else {
+    } else {
         panelMenu.render(framebuffer, panelController);
     }
 
