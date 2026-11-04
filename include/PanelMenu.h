@@ -79,7 +79,7 @@ private:
     static constexpr float RELEASE_ANGLE_PITCH = 15.0f * PI / 180.0f;
     static constexpr float FAST_ENGAGE_ANGLE_PITCH  = 45.0f * PI / 180.0f;
 
-    static constexpr uint32_t INITIAL_REPEAT_MS = 500;
+    static constexpr uint32_t INITIAL_REPEAT_MS = 1000;
     static constexpr uint32_t REPEAT_MS = 300;
     static constexpr uint32_t FAST_REPEAT_MS = 100;
 
