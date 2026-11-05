@@ -212,7 +212,7 @@ void loop()
 
     if(DEBUG_PRINT == 2) {
         static uint32_t lastPrint = 0;
-        if (millis() - lastPrint > 1000) {
+        if (millis() - lastPrint > 5000) {
             lastPrint = millis();
 
             Serial.printf(

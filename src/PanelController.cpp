@@ -41,3 +41,9 @@ void PanelController::renderScene(PixelFramebuffer& framebuffer) {
     if (activeScene)
         activeScene->render(framebuffer);
 }
+
+int PanelController::getSceneDiffuserPosition() const {
+    return activeScene
+        ? activeScene->preferredDiffuserPosition()
+        : 10;
+}

@@ -18,6 +18,9 @@ public:
 
     void render(PixelFramebuffer& framebuffer) override;
 
+    // Set the value from 0-100 (0 being closest to LEDs, 100 being most diffused - farthest from LEDs)
+    int preferredDiffuserPosition() const override { return 0; }  
+
 private:
     GraphicsAnimations& gAnim;
     EyeballSettings settings{};

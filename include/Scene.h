@@ -21,5 +21,8 @@ public:
     virtual void processPose(const WandPacket& packet) {}
     virtual void processGesture(const GestureEvent& event) {}
     virtual void render(PixelFramebuffer& framebuffer) = 0;
-    virtual int preferredDiffuserPosition() const { return 30; }
+
+    // Preferred diffuser distance for this scene.
+    // 0 = minimum blur, 100 = maximum blur.
+    virtual int preferredDiffuserPosition() const { return 0; }
 };
