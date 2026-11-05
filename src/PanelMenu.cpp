@@ -6,7 +6,7 @@ namespace {
     // Five characters maximum per item for the 30x30 display.
     const char* const MAIN_ITEMS[]  = { "SCENE", "PANEL", "TEST" };
     // These two lists are placeholders for future action handling.
-    const char* const PANEL_ITEMS[] = { "BRITE", "DIFFD" };
+    const char* const PANEL_ITEMS[] = { "BRITE", "DIFFO" };
     const char* const TEST_ITEMS[]  = {
         "CORNR", "ROWS", "COLS", "BAND", "COLOR", "PIXEL", "DIAG"
     };
@@ -164,9 +164,8 @@ MenuAction PanelMenu::adjustValue(MenuDirection direction)
             action.value = brightness;
             break;
 
-        case 1:  // DIFFD
-            diffuserOffset = constrain(diffuserOffset + increment, 0, 100);
-
+        case 1:  // DIFFO
+            diffuserOffset = constrain(diffuserOffset + increment, -100, 100);
             action.type = MenuActionType::SetDiffuser;
             action.value = diffuserOffset;
             break;
@@ -174,6 +173,19 @@ MenuAction PanelMenu::adjustValue(MenuDirection direction)
 
     return action;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 MenuAction PanelMenu::processPose(const WandPacket& packet, const PanelController& controller) {
@@ -228,7 +240,7 @@ void PanelMenu::renderValue(PixelFramebuffer& framebuffer)
             break;
 
         case 1:
-            name = "DIFFD";
+            name = "DIFFO";
             value = diffuserOffset;
             break;
 
@@ -237,7 +249,16 @@ void PanelMenu::renderValue(PixelFramebuffer& framebuffer)
     }
 
     char valueString[8];
-    snprintf(valueString, sizeof(valueString), "%d", value);
+
+    if (selected == 1) {
+        if(value == 0) {
+            snprintf(valueString, sizeof(valueString)," %d", value);  // add a space before the zero to keep it aligned
+        } else {
+            snprintf(valueString, sizeof(valueString), value > 0 ? "+%d" : "%d", value);
+        }
+    } else {
+        snprintf(valueString, sizeof(valueString), "%d", value);
+    }
 
     const RGB labelColor = {20, 20, 20};
     const RGB valueColor = {0, 100, 0};

@@ -24,12 +24,21 @@ public:
         brightnessScale = constrain(value, 0, 100);
     }
 
+    void setDiffuserOffset(int value) { diffuserOffset = constrain(value, -100, 100); }
+    int getDiffuserOffset() const { return diffuserOffset; }
+
+    // First-cut scene request. Later replace with activeScene->preferredDiffuserPosition().
+    int getSceneDiffuserPosition() const { return sceneDiffuserPosition; }
+    void setSceneDiffuserPosition(int value) { sceneDiffuserPosition = constrain(value, 0, 100); }
+
     uint8_t getBrightnessScale() const {
         return brightnessScale;
     }
 
 private:
     uint8_t brightnessScale = 100;
+    int diffuserOffset = 0;
+    int sceneDiffuserPosition = 30;  // Temporary default until Scene API is extended
     uint8_t sceneCount = 0;
     uint8_t activeSceneIndex = 0;
     Scene* scenes[MAX_SCENES]{};

@@ -97,5 +97,6 @@ private:
     void updateVisibleWindow(PageState& page, uint8_t count);
     MenuAction adjustValue(MenuDirection direction);
     uint8_t brightness = 100;
-    uint8_t diffuserOffset = 50;
+    //uint8_t diffuserOffset = 0;
+    int8_t diffuserOffset = 0;
 };

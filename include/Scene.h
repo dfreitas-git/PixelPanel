@@ -21,4 +21,5 @@ public:
     virtual void processPose(const WandPacket& packet) {}
     virtual void processGesture(const GestureEvent& event) {}
     virtual void render(PixelFramebuffer& framebuffer) = 0;
+    virtual int preferredDiffuserPosition() const { return 30; }
 };

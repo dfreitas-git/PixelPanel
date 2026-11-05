@@ -92,16 +92,20 @@ void applyMenuAction(const MenuAction& action)
         case MenuActionType::SelectScene:
             panelController.selectScene(static_cast<uint8_t>(action.value));
             break;
+
         case MenuActionType::SelectTest:
             testScene.setPattern(static_cast<TestPattern>(action.value));
             panelController.setActiveScene(testScene);
             break;
+
         case MenuActionType::SetBrightness:
             panelController.setBrightnessScale(static_cast<uint8_t>(action.value));
             break;
+
         case MenuActionType::SetDiffuser:
-            // Existing setting is a menu-side placeholder; wire up later.
+            panelController.setDiffuserOffset(action.value);
             break;
+
         default:
             break;
     }
@@ -151,7 +155,7 @@ void setup()
 
 void loop()
 {
-    // Manually setting diffuser distance via a potentiometer
+    // Sample the physical minimum-safe-distance potentiometer
     uint32_t now = millis();
     if(now-lastDiffuserUpdate > DIFFUSER_UPDATE_TIME) {
         diffuser.sampleDiffuserPot();
@@ -191,6 +195,7 @@ void loop()
     // or old menu text leaking into a newly activated animation.
     static bool wasRunningScene = false;
     const bool runningScene = panelMenu.isRunningScene();
+
     if (runningScene != wasRunningScene) {
         framebuffer.clear();
         wasRunningScene = runningScene;
@@ -202,7 +207,28 @@ void loop()
         panelMenu.render(framebuffer, panelController);
     }
 
-    // Output whichever mode rendered the framebuffer.  Send current brightness scaling
-    pixelOutput.show( framebuffer, panelController.getBrightnessScale());
+    // Diffuser: menus require focus; running scenes use their requested blur + user offset.
+    const int requestedDiffuserPosition = runningScene ?  panelController.getSceneDiffuserPosition() + panelController.getDiffuserOffset() : 0;
+
+    if(DEBUG_PRINT == 2) {
+        static uint32_t lastPrint = 0;
+        if (millis() - lastPrint > 1000) {
+            lastPrint = millis();
+
+            Serial.printf(
+              "Scene: %d  Offset: %d  Requested: %d  PotMin: %d  Applied: %d\n",
+              panelController.getSceneDiffuserPosition(),
+              panelController.getDiffuserOffset(),
+              requestedDiffuserPosition,
+              diffuser.getMinSafePosition(),
+              diffuser.getAppliedPosition()
+            );
+        }
+    }
+
+    diffuser.setPosition(requestedDiffuserPosition);
+
+    // Output whichever view rendered the framebuffer.
+    pixelOutput.show(framebuffer, panelController.getBrightnessScale());
 
 }
