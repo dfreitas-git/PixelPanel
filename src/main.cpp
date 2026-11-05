@@ -83,6 +83,7 @@ PanelController panelController;
 PanelMenu panelMenu(gPrim);
 
 constexpr uint16_t DIFFUSER_UPDATE_TIME = 200;  // ms between reading diffuser setting pot
+constexpr uint16_t BRIGHTNESS_UPDATE_TIME = 200;  // ms between reading brightness setting pot
 uint16_t lastDiffuserUpdate = 0;
 
 // Application coordinator: menu requests do not directly manipulate hardware.
@@ -119,6 +120,9 @@ void setup()
     while ((!Serial || millis() < 2000) && millis() < 5000) {
         delay(10);
     }
+
+    // Brightness pot
+    pinMode(35, INPUT);
 
     // Set up the diffuser servos
     diffuser.begin();
@@ -157,9 +161,15 @@ void loop()
 {
     // Sample the physical minimum-safe-distance potentiometer
     uint32_t now = millis();
-    if(now-lastDiffuserUpdate > DIFFUSER_UPDATE_TIME) {
+    if(now - lastDiffuserUpdate > DIFFUSER_UPDATE_TIME) {
         diffuser.sampleDiffuserPot();
         lastDiffuserUpdate = now;
+    }
+
+    static uint32_t lastBrightnessSample = 0;
+    if (now - lastBrightnessSample >= BRIGHTNESS_UPDATE_TIME) {
+        lastBrightnessSample = millis();
+        panelController.sampleBrightnessPot();
     }
 
     WandPacket packet;
