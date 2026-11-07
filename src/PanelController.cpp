@@ -52,3 +52,8 @@ void PanelController::sampleBrightnessPot() {
     int potVal = analogRead(BRIGHTNESS_POT_PIN);
     potBrightness = map(potVal, 0, 4095, 0, 100);
 }
+
+void PanelController::onSingleClick() {
+    if (activeScene)
+        activeScene->onSingleClick();
+}

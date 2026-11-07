@@ -55,6 +55,8 @@ dlf  9/22/2026
 #include "EyeballScene.h"
 #include "Pacman1Scene.h"
 #include "TestScene.h"
+#include "CollidingPixelsScene.h"
+
 
 
 PanelRadio panelRadio;
@@ -78,6 +80,7 @@ CheckerBoardScene checkerBoardScene(gAnim);
 EyeballScene eyeballScene(gAnim);
 Pacman1Scene pacman1Scene(gAnim);
 TestScene testScene(testPanel);
+CollidingPixelsScene collidingPixelsScene(gPrim);
 
 PanelController panelController;
 PanelMenu panelMenu(gPrim);
@@ -121,6 +124,10 @@ void setup()
         delay(10);
     }
 
+    // To see what verion of compiler PlatformIO is using
+    Serial.printf("C++ standard: %ld\n", (long)__cplusplus);
+    Serial.printf("GCC version: %s\n", __VERSION__);
+
     // Brightness pot
     pinMode(35, INPUT);
 
@@ -144,11 +151,12 @@ void setup()
     }
 
     // Register the scenes and select the default
-    panelController.addScene(shootingStarsScene);  // index0
-    panelController.addScene(fireworksScene);      // index1
-    panelController.addScene(checkerBoardScene);   // index2
-    panelController.addScene(eyeballScene);        // index3
-    panelController.addScene(pacman1Scene);        // index4
+    panelController.addScene(shootingStarsScene);      // index0
+    panelController.addScene(fireworksScene);          // index1
+    panelController.addScene(checkerBoardScene);       // index2
+    panelController.addScene(eyeballScene);            // index3
+    panelController.addScene(pacman1Scene);            // index4
+    panelController.addScene(collidingPixelsScene);    // index5
 
     panelController.selectScene(0);   // Start with shootingStars
 
@@ -182,13 +190,15 @@ void loop()
         const bool hasEvent = panelRadio.processPacket(packet, event);
 
         if (hasEvent && event.gesture == WandGesture::ButtonSingle) {
-            MenuAction action = panelMenu.push(panelController);
-            applyMenuAction(action);
-        }
-        else if (hasEvent && event.gesture == WandGesture::ButtonDouble) {
+            if (panelMenu.isRunningScene()) {
+                panelController.onSingleClick();
+            } else {
+                MenuAction action = panelMenu.push(panelController);
+                applyMenuAction(action);
+            }
+        } else if (hasEvent && event.gesture == WandGesture::ButtonDouble) {
             panelMenu.pop();
-        }
-        else if (hasEvent && panelMenu.isRunningScene()) {
+        } else if (hasEvent && panelMenu.isRunningScene()) {
             panelController.processGesture(event);
         }
 

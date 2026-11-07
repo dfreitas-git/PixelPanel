@@ -22,6 +22,9 @@ public:
     virtual void processGesture(const GestureEvent& event) {}
     virtual void render(PixelFramebuffer& framebuffer) = 0;
 
+    // What to do when the wand button is pressed once
+    virtual void onSingleClick() {}
+
     // Preferred diffuser distance for this scene.
     // 0 = minimum blur, 100 = maximum blur.
     virtual int preferredDiffuserPosition() const { return 0; }

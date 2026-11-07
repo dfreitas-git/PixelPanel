@@ -35,6 +35,8 @@ public:
 
     int getSceneDiffuserPosition() const;
 
+    void onSingleClick();
+
 
 private:
     static constexpr uint8_t BRIGHTNESS_POT_PIN = 35;
