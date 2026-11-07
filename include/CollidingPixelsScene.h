@@ -3,6 +3,19 @@
 #include "Scene.h"
 #include "graphicsPrimitives.h"
 
+/* class that implements the CollitingPixel game on the PixelPanel
+   The game is simple, watch two pixels travel around the PixelPanel.  When
+   the pixel paths intersect, thrust the wand forward.  The closer they are 
+   together at the thrust moment, the higher the score.  If they are too far
+   apart, you score zero and the game is over.  You get only one chance at 
+   the first intersection point.  If you succeed, you move on to the next (harder)
+   level.  Final total score is displayed at the end.
+   
+   You do have a chance to replay a level if you miss.  Within five seconds, pressing
+   the wand buton will restart that level.   Single press on the button any other time 
+   will restart the game from the beginning 
+ */
+
 class CollidingPixelsScene : public Scene {
 public:
     explicit CollidingPixelsScene(GraphicsPrimitives& graphics) : graphics_(graphics) {}
@@ -20,11 +33,6 @@ private:
         float x0, y0, vx, vy; 
     };
 
-    Trajectory makeTrajectory(
-        float startX, float startY,
-        float targetX, float targetY,
-        uint32_t collisionTimeMs);
-
     struct Pixel { 
         float x, y; 
         RGB color; 
@@ -35,10 +43,22 @@ private:
         uint32_t collisionTimeMs; 
     };
 
+    Trajectory makeTrajectory(
+        float startX, float startY,
+        float targetX, float targetY,
+        uint32_t collisionTimeMs);
+
+    Trajectory makeReflectedTrajectory(
+        float startX, float startY,
+        float collisionX, float collisionY,
+        int mirrorX, int mirrorY,
+        uint32_t collisionTimeMs
+    );
+
     static constexpr uint32_t COUNTDOWN_MS = 3000;
     static constexpr uint32_t RESULT_MS = 1700;
     static constexpr uint32_t GRACE_MS = 180;
-    static constexpr int FINAL_ROUND = 3;
+    static constexpr int FINAL_ROUND = 6;
 
     GraphicsPrimitives& graphics_;
     State state_ = State::Ready;

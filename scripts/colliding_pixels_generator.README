@@ -1,0 +1,64 @@
+
+CollidingPixels Level Generator — Version 1  Written by chatGPT - 11/6/2026
+For use in generating/validating setup parameters for the PixelPanel game "CollidingPixels".
+Once you generate valid round_.a/round_.b/round_.collisionTimeMs values, paste them into CollidingPixelScene.cpp 
+in the setupRound() method (adding another case section) and update the CollidingPixelScene.h variable
+static constexpr int FINAL_ROUND to match the number of cases in your switch statement.
+
+/* For computing the trajectory of a pixel that bounces off the wall(s)
+    We are using a technique known as the method-of-images or unfolding.
+    The mirror numbering works like this:
+    - 0: The real panel (no reflection).
+    - 1: The mirrored panel immediately to the right or above.
+    - -1: The mirrored panel immediately to the left or below.
+    - 2, -2, etc.: Additional mirrored panels (i.e. more wall bounces).
+*/
+
+To run it on your Mac, save the file and execute:
+python3 colliding_pixels_generator.py \
+    --a 7 2 \
+    --b 2 10 \
+    --mirror-a 1 0 \
+    --mirror-b 0 0 \
+    --time 3000 \
+    --check 15 20
+
+
+The --check option validates one specified collision point. Without it, the script searches all 900 possible integer endpoints.
+Your existing round passes
+Collision (15,20)
+PASS
+
+Minimum separation
+3.310 px
+
+Measured at
+2800 ms
+
+
+
+Pixel A velocity: (12.000, 6.000) px/s
+
+Pixel B velocity: (4.333, 3.333) px/s
+No earlier exact intersection detected. The pixels remain at least 2 pixels apart until the final 200 ms.
+Our earlier horizontal example, which had an unintended collision, was correctly rejected. The validator found that intersection at 1250 ms.
+Searching for new levels
+Remove --check and add --top 10 to display the ten candidates with the greatest minimum separation:
+python3 colliding_pixels_generator.py \
+    --a 7 2 --b 2 10 \
+    --mirror-a 1 0 --mirror-b 0 0 \
+    --time 3000 --top 10
+
+
+You can also adjust the visual requirements:
+Option	Default	Purpose
+--window	200 ms	Final approach window
+--clearance	2.0 px	Minimum separation before that window
+--top	10	Number of candidates to display
+--width, --height	30	Panel dimensions
+
+The script prints ready-to-paste C++ for each candidate.
+
+One limitation worth keeping in mind: the mathematical validator treats pixels as points. The clearance threshold approximates visual separation, 
+but it doesn't yet simulate how your framebuffer rounds positions onto LEDs. Also, the early-intersection test excludes the final 1ms to distinguish 
+the intended collision from the continuous approach to it.

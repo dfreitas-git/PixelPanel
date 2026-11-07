@@ -9,6 +9,7 @@ void CollidingPixelsScene::enter(State state, uint32_t now) {
 }
 
 void CollidingPixelsScene::begin() { startNewGame(); }
+
 void CollidingPixelsScene::onSingleClick() { startNewGame(); }
 
 void CollidingPixelsScene::startNewGame() {
@@ -20,6 +21,7 @@ void CollidingPixelsScene::startNewGame() {
     enter(State::Ready, millis());
 }
 
+// For computing the trajectory of a pixel with no bouncing off a wall
 CollidingPixelsScene::Trajectory CollidingPixelsScene::makeTrajectory(
     float startX, float startY,
     float targetX, float targetY,
@@ -34,11 +36,55 @@ CollidingPixelsScene::Trajectory CollidingPixelsScene::makeTrajectory(
     };
 }
 
+/* For computing the trajectory of a pixel that bounces off the wall(s)
+    We are using a technique known as the method-of-images or unfolding.
+    The mirror numbering works like this:
+    - 0: The real panel (no reflection).
+    - 1: The mirrored panel immediately to the right or above.
+    - -1: The mirrored panel immediately to the left or below.
+    - 2, -2, etc.: Additional mirrored panels.
+*/
+CollidingPixelsScene::Trajectory CollidingPixelsScene::makeReflectedTrajectory(
+    float startX, float startY,
+    float collisionX, float collisionY,
+    int mirrorX, int mirrorY,
+    uint32_t collisionTimeMs)
+{
+    constexpr float MAX_X = PANEL_WIDTH - 1.0f;
+    constexpr float MAX_Y = PANEL_HEIGHT - 1.0f;
+
+    // Each virtual panel alternates between normal
+    // and mirrored orientation.
+    auto virtualTarget = [](float target,
+                            float maxCoord,
+                            int mirror) -> float
+    {
+        if (mirror % 2 == 0)
+            return mirror * maxCoord + target;
+
+        return (mirror + 1) * maxCoord - target;
+    };
+
+    float targetX = virtualTarget(
+        collisionX, MAX_X, mirrorX);
+
+    float targetY = virtualTarget(
+        collisionY, MAX_Y, mirrorY);
+
+    return makeTrajectory(
+        startX, startY,
+        targetX, targetY,
+        collisionTimeMs);
+}
+
 void CollidingPixelsScene::setupRound() {
     // All three trajectories meet at (14.5, 14.5) at collisionTimeMs.
     // Velocities are in pixels per second.
     switch (roundNumber_) {
+
+        // pixels not reflecting off any wall cases
         case 1:
+            // arguments: starting x/y, collision x,y, collision-time mS
             round_.a = makeTrajectory( 0, 15, 14.5, 15, 3000);
             round_.b = makeTrajectory( 29, 15, 14.5, 15, 3000);
             round_.collisionTimeMs = 3000;
@@ -55,10 +101,36 @@ void CollidingPixelsScene::setupRound() {
             round_.b = makeTrajectory( 29, 29, 14.5, 14.5, 1150);
             round_.collisionTimeMs = 1150;
             break;
+
+        // pixels reflecting off walls cases
+        case 4: {
+            constexpr uint32_t T = 3000;  // time before collision (in mS)
+            // arguments: starting x/y, collision x,y, mirror spec +/-X, +/-Y, collision-time mS
+            round_.a = makeReflectedTrajectory( 7, 2, 15, 20, 1, 0, T);
+            round_.b = makeReflectedTrajectory( 2, 10, 15, 20, 0, 0, T);
+            round_.collisionTimeMs = T;
+            break;
+        }
+
+        case 5: {
+            constexpr uint32_t T = 3000;  // time before collision (in mS)
+            round_.a = makeReflectedTrajectory(10, 10, 8, 5, -1, 0, 3000);
+            round_.b = makeReflectedTrajectory(20, 20, 8, 5, 0, 1, 3000);
+            round_.collisionTimeMs = T;
+            break;
+        }
+        case 6: {
+            constexpr uint32_t T = 3000;  // time before collision (in mS)
+            round_.a = makeReflectedTrajectory(10, 10, 18, 0, -2, -2, 3000);
+            round_.b = makeReflectedTrajectory(20, 20, 18, 0, 1, 1, 3000);
+            round_.collisionTimeMs = 3000;
+            break;
+        }
     }
     positionAt(0);
 }
 
+// Used when folding virtual mirror-grids back to the physical grid
 float CollidingPixelsScene::reflected(float position, float maximum) {
     const float period = 2.0f * maximum;
     float p = fmodf(position, period);
