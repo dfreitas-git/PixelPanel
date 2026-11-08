@@ -175,7 +175,6 @@ void CollidingPixelsScene::setupRound() {
             round_.collisionTimeMs = 1000;
             break;
         
-
         // pixels reflecting off walls cases
         case 5: {
             constexpr uint32_t T = 3000;  // time before collision (in mS)
@@ -188,7 +187,6 @@ void CollidingPixelsScene::setupRound() {
 
         case 6: {
             //python3 colliding_pixels_generator.py  --a 10 10 --b 20 20 --mirror-a -1 0 --mirror-b 0 1  --time 3000 --top 10
-
             constexpr uint32_t T = 3000;  // time before collision (in mS)
             round_.a = makeReflectedTrajectory(10, 10, 8, 5, -1, 0, 3000);
             round_.b = makeReflectedTrajectory(20, 20, 8, 5, 0, 1, 3000);
@@ -204,7 +202,6 @@ void CollidingPixelsScene::setupRound() {
         
         case 8: {
             // python3 colliding_pixels_generator.py --a 10 10 --b 20 20 --mirror-a -2 -2 --mirror-b 1 1  --time 3000 --top 10
-
             constexpr uint32_t T = 3000;  // time before collision (in mS)
             round_.a = makeReflectedTrajectory(10, 10, 18, 0, -2, -2, 3000);
             round_.b = makeReflectedTrajectory(20, 20, 18, 0, 1, 1, 3000);
@@ -224,7 +221,6 @@ void CollidingPixelsScene::setupRound() {
         case 10:
             // sine wave path
             // python3 colliding_pixels_curves.py --a 0 15 --target-a 29 15 --duration-a 3000 --b 15 29 --target-b 15 0 --duration-b 4000 --sine-a 7 4
-
             round_.a = makeSineTrajectory(0, 15, 29, 15, 3000, 7, 4);
             round_.b = makeTrajectory(15, 29, 15, 0, 4000);
             round_.collisionTimeMs = 1549;
@@ -249,7 +245,6 @@ void CollidingPixelsScene::setupRound() {
         case 13:
             // sine wave path
             // python3 colliding_pixels_curves.py --a 0 15 --target-a 29 15 --duration-a 3000 --sine-a 7 4 --b 15 29 --target-b 15 0 --duration-b 3000 --sine-b 7 4
-
             round_.a = makeSineTrajectory(0, 15, 29, 15, 3000, 7, 4);
             round_.b = makeSineTrajectory(15, 29, 15, 0, 3000, 7, 4);
             round_.collisionTimeMs = 1492;

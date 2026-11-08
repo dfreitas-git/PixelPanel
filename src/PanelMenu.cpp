@@ -4,7 +4,7 @@
 
 namespace {
     // Five characters maximum per item for the 30x30 display.
-    const char* const MAIN_ITEMS[]  = { "SCENE", "PANEL", "TEST" };
+    const char* const MAIN_ITEMS[]  = { "SCENE", "SETUP", "TEST" };
     // These two lists are placeholders for future action handling.
     const char* const PANEL_ITEMS[] = { "BRITE", "DIFFO" };
     const char* const TEST_ITEMS[]  = {
