@@ -10,7 +10,16 @@ void CollidingPixelsScene::enter(State state, uint32_t now) {
 
 void CollidingPixelsScene::begin() { startNewGame(); }
 
-void CollidingPixelsScene::onSingleClick() { startNewGame(); }
+void CollidingPixelsScene::onSingleClick() { 
+    // We allow the user to retry the level if they singleClick a miss within a few seconds
+    if(state_ == State::Retry) {
+        state_ = State::Ready;
+        roundScore_ = 0;
+        stateStartMs_ = millis();
+    } else {
+        startNewGame(); 
+    }
+}
 
 void CollidingPixelsScene::startNewGame() {
     roundNumber_ = 1;
@@ -205,6 +214,8 @@ void CollidingPixelsScene::render(PixelFramebuffer& fb) {
                 finishRound(withinWindow);
             } else {
                 positionAt(elapsed);
+
+                // if they wait too long (i.e. pixels cross), game over!
                 if (elapsed > round_.collisionTimeMs + GRACE_MS)
                     finishRound(false);
             }
@@ -214,7 +225,11 @@ void CollidingPixelsScene::render(PixelFramebuffer& fb) {
             if (elapsed >= RESULT_MS) {
                 if (!roundSucceeded_ || roundNumber_ >= FINAL_ROUND) {
                     if (totalScore_ > bestScore_) bestScore_ = totalScore_;
-                    enter(State::GameOver, now);
+                    if(roundSucceeded_) {
+                        enter(State::GameOver, now);
+                    } else {
+                        enter(State::Retry, now);
+                    }
                 } else {
                     ++roundNumber_;
                     setupRound();
@@ -222,6 +237,14 @@ void CollidingPixelsScene::render(PixelFramebuffer& fb) {
                 }
             }
             break;
+
+        case State::Retry:
+            // if they single-click before RETRY_MS, then we restart the level (see onSingleClick())
+            if (elapsed >= RETRY_MS) {
+                enter(State::GameOver, now);
+            }
+            break;
+
         case State::GameOver:
             break;
     }
@@ -232,8 +255,21 @@ void CollidingPixelsScene::render(PixelFramebuffer& fb) {
     }
     if (state_ == State::Result) {
         char score[8];
-        snprintf(score, sizeof(score), "%d", roundScore_);
+        if(roundScore_ == 0) {
+            snprintf(score, sizeof(score), "MISS!");
+        } else {
+            snprintf(score, sizeof(score), "%d", roundScore_);
+        }
         drawCentered(fb, score, 20, roundSucceeded_ ? RGB{40, 255, 60} : RGB{255, 40, 40});
+
+    } else if (state_ == State::Retry) {
+        char level[5];
+        snprintf(level, sizeof(level), "LEV%d", roundNumber_);
+        drawCentered(fb, level, 22, {128, 0, 0});
+        drawCentered(fb, "CLICK", 15, {60, 160, 255});
+        drawCentered(fb, "TO", 8, {60, 160, 255});
+        drawCentered(fb, "RETRY", 1, {60, 160, 255});
+
     } else if (state_ == State::GameOver) {
         char score[8];
         drawCentered(fb, "END", 23, {255, 70, 50});

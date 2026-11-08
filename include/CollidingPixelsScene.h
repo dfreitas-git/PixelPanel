@@ -27,7 +27,7 @@ public:
     int preferredDiffuserPosition() const override { return 0; }
 
 private:
-    enum class State { Ready, Playing, Result, GameOver };
+    enum class State { Ready, Playing, Result, Retry, GameOver };
 
     struct Trajectory { 
         float x0, y0, vx, vy; 
@@ -57,6 +57,7 @@ private:
 
     static constexpr uint32_t COUNTDOWN_MS = 3000;
     static constexpr uint32_t RESULT_MS = 1700;
+    static constexpr uint32_t RETRY_MS = 5000;
     static constexpr uint32_t GRACE_MS = 180;
     static constexpr int FINAL_ROUND = 6;
 
