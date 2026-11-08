@@ -30,18 +30,21 @@ void CollidingPixelsScene::startNewGame() {
     enter(State::Ready, millis());
 }
 
-// For computing the trajectory of a pixel with no bouncing off a wall
+
 CollidingPixelsScene::Trajectory CollidingPixelsScene::makeTrajectory(
     float startX, float startY,
     float targetX, float targetY,
-    uint32_t collisionTimeMs)
+    uint32_t durationMs)
 {
-    float t = collisionTimeMs / 1000.0f;
+    float t = durationMs / 1000.0f;
 
     return {
         startX, startY,
         (targetX - startX) / t,
-        (targetY - startY) / t
+        (targetY - startY) / t,
+        0.0f,       // amplitude: no sine modulation
+        0.0f,       // cycles: no sine modulation
+        durationMs  // trajectory duration
     };
 }
 
@@ -86,6 +89,58 @@ CollidingPixelsScene::Trajectory CollidingPixelsScene::makeReflectedTrajectory(
         collisionTimeMs);
 }
 
+CollidingPixelsScene::Trajectory CollidingPixelsScene::makeSineTrajectory(
+    float startX, float startY,
+    float targetX, float targetY,
+    uint32_t durationMs,
+    float amplitude, float cycles)
+{
+    Trajectory tr = makeTrajectory(
+        startX, startY,
+        targetX, targetY,
+        durationMs);
+
+    tr.amplitude = amplitude;
+    tr.cycles = cycles;
+
+    return tr;
+}
+
+void CollidingPixelsScene::evaluateTrajectory(
+    const Trajectory& trajectory,
+    uint32_t elapsedMs,
+    float& x,
+    float& y)
+{
+    float t = elapsedMs / 1000.0f;
+
+    // Original straight-line trajectory
+    x = trajectory.x0 + trajectory.vx * t;
+    y = trajectory.y0 + trajectory.vy * t;
+
+    // Optional sinusoidal displacement
+    if (trajectory.amplitude != 0.0f) {
+
+        float length = sqrtf(
+            trajectory.vx * trajectory.vx +
+            trajectory.vy * trajectory.vy);
+
+        if (length > 0.0001f) {
+            float nx = -trajectory.vy / length;
+            float ny =  trajectory.vx / length;
+            float u = (float)elapsedMs / trajectory.durationMs;
+            float offset = trajectory.amplitude * sinf(2.0f * PI * trajectory.cycles * u);
+
+            x += nx * offset;
+            y += ny * offset;
+        }
+    }
+
+    // Fold virtual coordinates into physical panel
+    x = reflected(x, PANEL_WIDTH - 1);
+    y = reflected(y, PANEL_HEIGHT - 1);
+}
+
 void CollidingPixelsScene::setupRound() {
     // All three trajectories meet at (14.5, 14.5) at collisionTimeMs.
     // Velocities are in pixels per second.
@@ -93,48 +148,128 @@ void CollidingPixelsScene::setupRound() {
 
         // pixels not reflecting off any wall cases
         case 1:
-            // arguments: starting x/y, collision x,y, collision-time mS
+            // arguments: starting x/y, collision x,y, durationMs
             round_.a = makeTrajectory( 0, 15, 14.5, 15, 3000);
             round_.b = makeTrajectory( 29, 15, 14.5, 15, 3000);
             round_.collisionTimeMs = 3000;
             break;
-
+        
         case 2:  // Vertical
+            // arguments: starting x/y, collision x,y, durationMs
             round_.a = makeTrajectory( 15, 0, 15, 14.5, 2000);
             round_.b = makeTrajectory( 15, 29, 15, 14.5, 2000);
             round_.collisionTimeMs = 2000;
             break;
 
         case 3:  // Diagonal
+            // arguments: starting x/y, collision x,y, durationMs
             round_.a = makeTrajectory( 0, 0, 14.5, 14.5, 1150);
             round_.b = makeTrajectory( 29, 29, 14.5, 14.5, 1150);
             round_.collisionTimeMs = 1150;
             break;
 
+        case 4:
+            // arguments: starting x/y, collision x,y, durationMs
+            round_.a = makeTrajectory(0, 15, 15, 15, 1000);
+            round_.b = makeTrajectory(15, 29, 15, 15, 1000);
+            round_.collisionTimeMs = 1000;
+            break;
+        
+
         // pixels reflecting off walls cases
-        case 4: {
+        case 5: {
             constexpr uint32_t T = 3000;  // time before collision (in mS)
-            // arguments: starting x/y, collision x,y, mirror spec +/-X, +/-Y, collision-time mS
+            // arguments: starting x/y, collision x,y, mirror spec +/-X, +/-Y, durationMs
             round_.a = makeReflectedTrajectory( 7, 2, 15, 20, 1, 0, T);
             round_.b = makeReflectedTrajectory( 2, 10, 15, 20, 0, 0, T);
             round_.collisionTimeMs = T;
             break;
         }
 
-        case 5: {
+        case 6: {
+            //python3 colliding_pixels_generator.py  --a 10 10 --b 20 20 --mirror-a -1 0 --mirror-b 0 1  --time 3000 --top 10
+
             constexpr uint32_t T = 3000;  // time before collision (in mS)
             round_.a = makeReflectedTrajectory(10, 10, 8, 5, -1, 0, 3000);
             round_.b = makeReflectedTrajectory(20, 20, 8, 5, 0, 1, 3000);
             round_.collisionTimeMs = T;
             break;
         }
-        case 6: {
+        case 7:
+            // python3 colliding_pixels_generator.py  --a 10 10 --b 20 20 --mirror-a -3 3 --mirror-b 2 -2  --time 4000 --top 1 
+            round_.a = makeReflectedTrajectory(10, 10, 19, 0, -3, 3, 4000);
+            round_.b = makeReflectedTrajectory(20, 20, 19, 0, 2, -2, 4000);
+            round_.collisionTimeMs = 4000;
+            break;
+        
+        case 8: {
+            // python3 colliding_pixels_generator.py --a 10 10 --b 20 20 --mirror-a -2 -2 --mirror-b 1 1  --time 3000 --top 10
+
             constexpr uint32_t T = 3000;  // time before collision (in mS)
             round_.a = makeReflectedTrajectory(10, 10, 18, 0, -2, -2, 3000);
             round_.b = makeReflectedTrajectory(20, 20, 18, 0, 1, 1, 3000);
             round_.collisionTimeMs = 3000;
             break;
         }
+        // sine wave paths
+        case 9:
+            // sine wave path
+            round_.a = makeSineTrajectory( 2, 2, 29, 29, 3000,7,4);
+            round_.b = makeTrajectory( 29, 2, 0, 15, 3000);
+            // Need to specify the actual collision time since the endpoint 
+            // of the sine path may not be where the two pixels actually cross
+            round_.collisionTimeMs = 1446;  
+            break;
+
+        case 10:
+            // sine wave path
+            // python3 colliding_pixels_curves.py --a 0 15 --target-a 29 15 --duration-a 3000 --b 15 29 --target-b 15 0 --duration-b 4000 --sine-a 7 4
+
+            round_.a = makeSineTrajectory(0, 15, 29, 15, 3000, 7, 4);
+            round_.b = makeTrajectory(15, 29, 15, 0, 4000);
+            round_.collisionTimeMs = 1549;
+            break;
+
+        case 11:
+            // sine wave path
+            //python3 colliding_pixels_curves.py --a 5 5 --target-a 25 25 --duration-a 3000 --sine-a 7 2 --b 5 25 --target-b 25 5  --duration-b 3000 --sine-b 7 2
+            round_.a = makeSineTrajectory(5, 5, 25, 25, 3000, 7, 2);
+            round_.b = makeSineTrajectory(5, 25, 25, 5, 3000, 7, 2);
+            round_.collisionTimeMs = 1500;
+            break;
+
+        case 12:
+            // sine wave path
+            //  python3 colliding_pixels_curves.py --a 0 15 --target-a 29 15 --duration-a 3000 --sine-a 14 2  --b 15 0 --target-b 15 29 --duration-b 3000 --sine-b 10 3
+            round_.a = makeSineTrajectory(0, 15, 29, 15, 3000, 14, 2);
+            round_.b = makeSineTrajectory(15, 0, 15, 29, 3000, 10, 3);
+            round_.collisionTimeMs = 1490;
+            break;
+
+        case 13:
+            // sine wave path
+            // python3 colliding_pixels_curves.py --a 0 15 --target-a 29 15 --duration-a 3000 --sine-a 7 4 --b 15 29 --target-b 15 0 --duration-b 3000 --sine-b 7 4
+
+            round_.a = makeSineTrajectory(0, 15, 29, 15, 3000, 7, 4);
+            round_.b = makeSineTrajectory(15, 29, 15, 0, 3000, 7, 4);
+            round_.collisionTimeMs = 1492;
+            break;
+
+        case 14:
+            // sine wave with reflections
+            // python3 colliding_pixels_curves.py --a 0 0 --target-a 29 29 --duration-a 3000 --sine-a 14 2 --b 15 0 --target-b 15 29 --duration-b 3000 --sine-b 10 3  --tolerance .21
+            round_.a = makeSineTrajectory(0, 0, 29, 29, 3000, 14, 2);
+            round_.b = makeSineTrajectory(15, 0, 15, 29, 3000, 10, 3);
+            round_.collisionTimeMs = 1496;
+            break;
+
+        case 15:
+            // python3 colliding_pixels_curves.py --a 0 15 --target-a 29 15 --duration-a 3000 --sine-a 14 2 --b 15 0 --target-b 15 29 --duration-b 3000 --sine-b 10 3 
+            round_.a = makeSineTrajectory(29, 0, 0, 29, 5000, 14, 2);
+            round_.b = makeSineTrajectory(0, 29, 29, 0, 5000, 14, 3);
+            round_.collisionTimeMs = 2500;
+            break;
+
     }
     positionAt(0);
 }
@@ -147,12 +282,15 @@ float CollidingPixelsScene::reflected(float position, float maximum) {
     return p <= maximum ? p : period - p;
 }
 
-void CollidingPixelsScene::positionAt(uint32_t elapsedMs) {
-    const float t = elapsedMs * 0.001f;
-    a_.x = reflected(round_.a.x0 + round_.a.vx * t, PANEL_WIDTH - 1);
-    a_.y = reflected(round_.a.y0 + round_.a.vy * t, PANEL_HEIGHT - 1);
-    b_.x = reflected(round_.b.x0 + round_.b.vx * t, PANEL_WIDTH - 1);
-    b_.y = reflected(round_.b.y0 + round_.b.vy * t, PANEL_HEIGHT - 1);
+void CollidingPixelsScene::positionAt(uint32_t elapsedMs)
+{
+    evaluateTrajectory(
+        round_.a, elapsedMs,
+        a_.x, a_.y);
+
+    evaluateTrajectory(
+        round_.b, elapsedMs,
+        b_.x, b_.y);
 }
 
 float CollidingPixelsScene::distance() const {
@@ -263,7 +401,7 @@ void CollidingPixelsScene::render(PixelFramebuffer& fb) {
         drawCentered(fb, score, 20, roundSucceeded_ ? RGB{40, 255, 60} : RGB{255, 40, 40});
 
     } else if (state_ == State::Retry) {
-        char level[5];
+        char level[6];
         snprintf(level, sizeof(level), "LEV%d", roundNumber_);
         drawCentered(fb, level, 22, {128, 0, 0});
         drawCentered(fb, "CLICK", 15, {60, 160, 255});

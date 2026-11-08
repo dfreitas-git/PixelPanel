@@ -29,8 +29,12 @@ public:
 private:
     enum class State { Ready, Playing, Result, Retry, GameOver };
 
-    struct Trajectory { 
-        float x0, y0, vx, vy; 
+    struct Trajectory {
+        float x0, y0;
+        float vx, vy;
+        float amplitude;
+        float cycles;
+        uint32_t durationMs;
     };
 
     struct Pixel { 
@@ -46,7 +50,7 @@ private:
     Trajectory makeTrajectory(
         float startX, float startY,
         float targetX, float targetY,
-        uint32_t collisionTimeMs);
+        uint32_t durationMs);
 
     Trajectory makeReflectedTrajectory(
         float startX, float startY,
@@ -55,11 +59,26 @@ private:
         uint32_t collisionTimeMs
     );
 
+    Trajectory makeSineTrajectory(
+        float startX, float startY,
+        float targetX, float targetY,
+        uint32_t collisionTimeMs,
+        float amplitude,
+        float cycles
+    );
+
+    void evaluateTrajectory(
+        const Trajectory& trajectory,
+        uint32_t elapsedMs,
+        float& x,
+        float& y
+    );
+
     static constexpr uint32_t COUNTDOWN_MS = 3000;
     static constexpr uint32_t RESULT_MS = 1700;
     static constexpr uint32_t RETRY_MS = 5000;
     static constexpr uint32_t GRACE_MS = 180;
-    static constexpr int FINAL_ROUND = 6;
+    static constexpr int FINAL_ROUND = 15;
 
     GraphicsPrimitives& graphics_;
     State state_ = State::Ready;

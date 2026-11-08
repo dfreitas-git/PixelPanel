@@ -1,0 +1,23 @@
+
+usage: colliding_pixels_generator.py [-h] --a X Y --b X Y --mirror-a MX MY --mirror-b MX MY --time MS 
+       [--width WIDTH] [--height HEIGHT] [--window MS] [--clearance PX] [--top N] [--check X Y]
+
+
+
+Example:   python3 colliding_pixels_curves.py --a 0 15 --target-a 29 15 --duration-a 3000 --sine-a 14 2 --b 15 0 --target-b 15 29 --duration-b 3000 --sine-b 10 3
+
+Generates two pixels, both using a sinewave path.  The first pixel starts at 0,15 and heads toward 29,15.  The second starts at 15,0 and head toward 15,29.  
+The amplitude of the sinewave for pixelA is 14 and will traverse 2 cycles in 3000ms.  The amplitude for pixelB is 10 and will traverse 3 cycles in 3000ms..
+
+Result:
+
+Paths: A velocity=(9.666666666666666, 0.0) px/s; B velocity=(0.0, 9.666666666666666) px/s
+Searched 0..3000 ms at 2.000 ms coarse intervals; tolerance=0.15 px
+Found 1 encounter(s) within tolerance; 5 local separation minima
+  ENCOUNTER at 1490.22 ms, separation 0.02883 px, near (14.41,14.43)
+
+C++ candidate (collision time rounded to nearest millisecond):
+round_.a = makeSineTrajectory(0, 15, 29, 15, 3000, 14, 2);
+round_.b = makeSineTrajectory(15, 0, 15, 29, 3000, 10, 3);
+round_.collisionTimeMs = 1490;
+
