@@ -10,6 +10,11 @@ void PanelController::addScene(Scene& scene) {
         scenes[sceneCount++] = &scene;
 }
 
+void PanelController::addGames(Scene& game) {
+    if (gamesCount < MAX_GAMES)
+        games[gamesCount++] = &game;
+}
+
 void PanelController::selectScene(uint8_t index)
 {
     if (index >= sceneCount)
@@ -17,6 +22,15 @@ void PanelController::selectScene(uint8_t index)
 
     activeSceneIndex = index;
     setActiveScene(*scenes[index]);
+}
+
+void PanelController::selectGames(uint8_t index)
+{
+    if (index >= gamesCount)
+        return;
+
+    activeGamesIndex = index;
+    setActiveGames(*games[index]);
 }
 
 void PanelController::setActiveScene(Scene& scene) {
@@ -27,8 +41,20 @@ void PanelController::setActiveScene(Scene& scene) {
     activeScene->begin();
 }
 
+void PanelController::setActiveGames(Scene& game) {
+    if (activeScene == &game)
+        return;
+
+    activeScene = &game;
+    activeScene->begin();
+}
+
 const char* PanelController::getSceneName(uint8_t index) const {
     return index < sceneCount ? scenes[index]->name() : "";
+}
+
+const char* PanelController::getGamesName(uint8_t index) const {
+    return index < gamesCount ? games[index]->name() : "";
 }
 
 void PanelController::processGesture(const GestureEvent& event) {

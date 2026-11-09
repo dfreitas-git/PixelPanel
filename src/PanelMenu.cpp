@@ -4,11 +4,14 @@
 
 namespace {
     // Five characters maximum per item for the 30x30 display.
-    const char* const MAIN_ITEMS[]  = { "SCENE", "SETUP", "TEST" };
+    const char* const MAIN_ITEMS[]  = { "SCENE", "SETUP", "TEST", "GAMES" };
     // These two lists are placeholders for future action handling.
     const char* const PANEL_ITEMS[] = { "BRITE", "DIFFO" };
     const char* const TEST_ITEMS[]  = {
         "CORNR", "ROWS", "COLS", "BAND", "COLOR", "PIXEL", "DIAG"
+    };
+    const char* const GAMES_ITEMS[]  = {
+        "SMASH"
     };
 
     constexpr uint8_t MAIN_COUNT  = sizeof(MAIN_ITEMS)  / sizeof(MAIN_ITEMS[0]);
@@ -22,6 +25,7 @@ uint8_t PanelMenu::itemCount(MenuPage page, const PanelController& controller) c
         case MenuPage::Scenes: return controller.getSceneCount();
         case MenuPage::Panel:  return PANEL_COUNT;
         case MenuPage::Test:   return TEST_COUNT;
+        case MenuPage::Games:  return controller.getGamesCount();
         default:               return 0;
     }
 }
@@ -33,6 +37,7 @@ const char* PanelMenu::itemName(MenuPage page, uint8_t index, const PanelControl
         case MenuPage::Scenes: return controller.getSceneName(index);
         case MenuPage::Panel:  return PANEL_ITEMS[index];
         case MenuPage::Test:   return TEST_ITEMS[index];
+        case MenuPage::Games:  return controller.getGamesName(index);
         default:               return "";
     }
 }
@@ -113,10 +118,18 @@ MenuAction PanelMenu::push(const PanelController& controller) {
             case 0: changePage(MenuPage::Scenes, controller); break;
             case 1: changePage(MenuPage::Panel, controller); break;
             case 2: changePage(MenuPage::Test, controller); break;
+            case 3: changePage(MenuPage::Games, controller); break;
         }
     } else if (currentPage == MenuPage::Scenes) {
         if (page.selectedIndex < controller.getSceneCount()) {
             action.type = MenuActionType::SelectScene;
+            action.value = page.selectedIndex;
+            currentView = MenuView::Scene;
+            resetNavigation();
+        }
+    } else if (currentPage == MenuPage::Games) {
+        if (page.selectedIndex < controller.getSceneCount()) {
+            action.type = MenuActionType::SelectGames;
             action.value = page.selectedIndex;
             currentView = MenuView::Scene;
             resetNavigation();

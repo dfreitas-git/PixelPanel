@@ -97,6 +97,10 @@ void applyMenuAction(const MenuAction& action)
             panelController.selectScene(static_cast<uint8_t>(action.value));
             break;
 
+        case MenuActionType::SelectGames:
+            panelController.selectGames(static_cast<uint8_t>(action.value));
+            break;
+
         case MenuActionType::SelectTest:
             testScene.setPattern(static_cast<TestPattern>(action.value));
             panelController.setActiveScene(testScene);
@@ -156,9 +160,11 @@ void setup()
     panelController.addScene(checkerBoardScene);       // index2
     panelController.addScene(eyeballScene);            // index3
     panelController.addScene(pacman1Scene);            // index4
-    panelController.addScene(collidingPixelsScene);    // index5
+
+    panelController.addGames(collidingPixelsScene);    // games index0
 
     panelController.selectScene(0);   // Start with shootingStars
+    panelController.selectGames(0);   // For Games, start with ColligingPixels
 
     framebuffer.clear();
     pixelOutput.show( framebuffer, panelController.getBrightnessScale());

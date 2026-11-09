@@ -19,7 +19,7 @@
 class CollidingPixelsScene : public Scene {
 public:
     explicit CollidingPixelsScene(GraphicsPrimitives& graphics) : graphics_(graphics) {}
-    const char* name() const override { return "COLID"; }
+    const char* name() const override { return "SMASH"; }
     void begin() override;
     void onSingleClick() override;
     void processGesture(const GestureEvent& event) override;

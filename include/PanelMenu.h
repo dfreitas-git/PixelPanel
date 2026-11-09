@@ -12,6 +12,7 @@ enum class MenuPage : uint8_t {
     Scenes,
     Panel,
     Test,
+    Games,
     Count
 };
 
@@ -32,6 +33,7 @@ enum class MenuActionType : uint8_t {
     None,
     SelectScene,
     SelectTest,
+    SelectGames,
     SetBrightness, 
     SetDiffuser,
 };
