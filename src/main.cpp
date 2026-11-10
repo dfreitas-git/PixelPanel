@@ -56,6 +56,7 @@ dlf  9/22/2026
 #include "Pacman1Scene.h"
 #include "TestScene.h"
 #include "CollidingPixelsScene.h"
+#include "ReflectingPondScene.h"
 
 
 
@@ -79,7 +80,12 @@ FireworksScene fireworksScene(gAnim);
 CheckerBoardScene checkerBoardScene(gAnim);
 EyeballScene eyeballScene(gAnim);
 Pacman1Scene pacman1Scene(gAnim);
+ReflectingPondScene reflectingPondScene;
+
+// test scenes
 TestScene testScene(testPanel);
+
+// game scenes
 CollidingPixelsScene collidingPixelsScene(gPrim);
 
 PanelController panelController;
@@ -160,6 +166,7 @@ void setup()
     panelController.addScene(checkerBoardScene);       // index2
     panelController.addScene(eyeballScene);            // index3
     panelController.addScene(pacman1Scene);            // index4
+    panelController.addScene(reflectingPondScene);     // index5
 
     panelController.addGames(collidingPixelsScene);    // games index0
 
@@ -173,6 +180,8 @@ void setup()
 
 void loop()
 {
+
+
     // Sample the physical minimum-safe-distance potentiometer
     uint32_t now = millis();
     if(now - lastDiffuserUpdate > DIFFUSER_UPDATE_TIME) {

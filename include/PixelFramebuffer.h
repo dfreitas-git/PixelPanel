@@ -8,12 +8,6 @@
 constexpr int PANEL_WIDTH  = 30;
 constexpr int PANEL_HEIGHT = 30;
 
-//struct RGB {
-//    uint8_t r;
-//    uint8_t g;
-//    uint8_t b;
-//};
-
 class PixelFramebuffer {
 public:
     void clear();
