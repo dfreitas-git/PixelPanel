@@ -1,17 +1,32 @@
 #include "ReflectingPondCore.h"
 #include <math.h>
+#include <Arduino.h>
 
 namespace {
-    const float TWO_PI = 6.28318530718f;
+    //const float TWO_PI = 6.28318530718f;
     struct Wave { float wavelength, angle, amplitude, speed, phase; };
     // Speeds are in cycles per second; wavelengths are in LED pixels.
     const Wave waves[] = {
-        {23.0f, 0.28f, 0.48f,  0.065f, 0.20f},
-        {17.0f, 1.83f, 0.28f, -0.047f, 1.70f},
-        {12.5f, 2.62f, 0.16f,  0.032f, 3.10f},
-        {28.0f, 1.05f, 0.08f, -0.019f, 4.20f}
+        //{23.0f, 0.28f, 0.48f,  0.065f, 0.20f},
+        //{17.0f, 1.83f, 0.28f, -0.047f, 1.70f},
+        //{12.5f, 2.62f, 0.16f,  0.032f, 3.10f},
+        //{28.0f, 1.05f, 0.08f, -0.019f, 4.20f}
+    {16.0f, 0.35f, 0.20f,  0.045f, 0.20f},
+    {13.0f, 1.45f, 0.22f, -0.053f, 1.70f},
+    {11.0f, 2.35f, 0.19f,  0.038f, 3.10f},
+    {19.0f, 0.95f, 0.16f, -0.031f, 4.20f},
+    { 8.5f, 2.85f, 0.12f,  0.062f, 2.30f}
     };
     const int WAVE_COUNT = sizeof(waves) / sizeof(waves[0]);
+    // Short, weak waves whose interference creates transient crests.
+    // Amplitudes sum to 1, so the resulting height is in [-1, 1].
+    const Wave shimmerWaves[] = {
+        {6.3f, 0.43f, 0.31f,  0.083f, 0.6f},
+        {4.7f, 1.96f, 0.27f, -0.109f, 2.1f},
+        {8.1f, 2.74f, 0.23f,  0.067f, 4.0f},
+        {5.4f, 1.12f, 0.19f, -0.091f, 5.2f}
+    };
+    const int SHIMMER_WAVE_COUNT = sizeof(shimmerWaves) / sizeof(shimmerWaves[0]);
     float lerp(float a, float b, float t) { return a + (b - a) * t; }
     uint8_t toByte(float v) {
         if (v < 0.0f) v = 0.0f;
@@ -22,14 +37,17 @@ namespace {
 
 ReflectingPondCore::ReflectingPondCore()
     : mode_(HEIGHT_COLOR), speed_(1.0f), intensity_(0.75f),
+      shimmerStrength_(0.65f), shimmerThreshold_(0.76f), shimmerSpeed_(1.0f),
       lastMs_(0), initialized_(false), phaseTime_(0.0f) {}
 
 void ReflectingPondCore::setRenderMode(RenderMode mode) { mode_ = mode; }
 void ReflectingPondCore::setSpeed(float speed) { speed_ = speed < 0.0f ? 0.0f : speed; }
 void ReflectingPondCore::setIntensity(float intensity) { intensity_ = clamp01(intensity); }
-float ReflectingPondCore::clamp01(float x) {
-    return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x);
-}
+void ReflectingPondCore::setShimmerStrength(float strength) { shimmerStrength_ = clamp01(strength); }
+void ReflectingPondCore::setShimmerThreshold(float threshold) { shimmerThreshold_ = clamp01(threshold); }
+void ReflectingPondCore::setShimmerSpeed(float speed) { shimmerSpeed_ = speed < 0.0f ? 0.0f : speed; }
+float ReflectingPondCore::clamp01(float x) { return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x); }
+void ReflectingPondCore::setShimmerCoupling(float coupling) { shimmerCoupling_ = clamp01(coupling); }
 
 float ReflectingPondCore::heightAt(float x, float y, float t) const {
     float h = 0.0f;
@@ -41,6 +59,17 @@ float ReflectingPondCore::heightAt(float x, float y, float t) const {
         h += w.amplitude * sinf(phase);
     }
     return h;
+}
+
+float ReflectingPondCore::shimmerAt(float x, float y, float t) const {
+    float h = 0.0f;
+    for (int i = 0; i < SHIMMER_WAVE_COUNT; ++i) {
+        const Wave &w = shimmerWaves[i];
+        float distance = x * cosf(w.angle) + y * sinf(w.angle);
+        float phase = TWO_PI * (distance / w.wavelength + w.speed * t) + w.phase;
+        h += w.amplitude * sinf(phase);
+    }
+    return 0.5f + 0.5f * h; // normalized to [0, 1]
 }
 
 ReflectingPondCore::Color ReflectingPondCore::palette(float level) {
@@ -67,7 +96,9 @@ void ReflectingPondCore::render(uint32_t nowMs, Color out[HEIGHT][WIDTH]) {
     uint32_t elapsedMs = nowMs - lastMs_;
     lastMs_ = nowMs;
     if (elapsedMs > 100) elapsedMs = 100;
+
     phaseTime_ += elapsedMs * 0.001f * speed_;
+
     // Keep phase bounded during very long runtimes.
     if (phaseTime_ > 10000.0f) phaseTime_ -= 10000.0f;
 
@@ -91,8 +122,25 @@ void ReflectingPondCore::render(uint32_t nowMs, Color out[HEIGHT][WIDTH]) {
                 default: level = clamp01(0.5f * heightLevel + 0.5f * lightLevel); break;
             }
             Color c = palette(level);
-            out[y][x] = { toByte(c.r * intensity_), toByte(c.g * intensity_),
-                          toByte(c.b * intensity_) };
+            float r = c.r * intensity_;
+            float g = c.g * intensity_;
+            float b = c.b * intensity_;
+            if (shimmerStrength_ > 0.0f && shimmerThreshold_ < 1.0f) {
+                float crest = shimmerAt(float(x), float(y), phaseTime_ * shimmerSpeed_);
+                float excess = clamp01((crest - shimmerThreshold_) /
+                                       (1.0f - shimmerThreshold_));
+                // Cubic response: weak crests barely glow, rare high crests shine.
+                float highlight = excess * excess * excess * shimmerStrength_;
+             //   float couplingFactor = (1.0f - shimmerCoupling_) + shimmerCoupling_ * heightLevel;
+                float couplingFactor = 1.0f + shimmerCoupling_ * (2.0f * heightLevel - 1.0f);
+
+                highlight *= couplingFactor;
+
+                r += 150.0f * highlight;
+                g += 225.0f * highlight;
+                b += 235.0f * highlight;
+            }
+            out[y][x] = { toByte(r), toByte(g), toByte(b) };
         }
     }
 }

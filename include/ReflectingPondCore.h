@@ -15,12 +15,19 @@ public:
     RenderMode getRenderMode() const { return mode_; }
     void setSpeed(float speed);       // 0.0 freezes the pond; default 1.0
     void setIntensity(float intensity); // 0.0 to 1.0; default 0.75
+    void setShimmerStrength(float strength); // 0 disables; 0..1
+    void setShimmerThreshold(float threshold); // 0..1 normalized crest height
+    void setShimmerSpeed(float speed); // relative to pond animation
+    void setShimmerCoupling(float coupling);
     void render(uint32_t nowMs, Color out[HEIGHT][WIDTH]);
 
 private:
     RenderMode mode_;
     float speed_;
     float intensity_;
+    float shimmerStrength_;
+    float shimmerThreshold_;
+    float shimmerSpeed_;
     uint32_t lastMs_;
     bool initialized_;
     float phaseTime_;
@@ -29,4 +36,6 @@ private:
     static float clamp01(float x);
     static Color palette(float level);
     float heightAt(float x, float y, float t) const;
+    float shimmerAt(float x, float y, float t) const;
+    float shimmerCoupling_ = 1.0f;
 };
