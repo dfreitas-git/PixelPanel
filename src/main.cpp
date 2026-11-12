@@ -181,13 +181,12 @@ void setup()
 void loop()
 {
 
-    //dlf
-    static uint32_t lastReport = millis();
-    static uint32_t loopCount = 0;
-    static uint64_t totalLoopUs = 0;
-    static uint32_t maxLoopUs = 0;
-    uint32_t startUs = micros();
-
+     // For profile printing
+     static uint32_t lastReport = millis();
+     static uint32_t loopCount = 0;
+     static uint64_t totalLoopUs = 0;
+     static uint32_t maxLoopUs = 0;
+     uint32_t startUs = micros();
 
     // Sample the physical minimum-safe-distance potentiometer
     uint32_t now = millis();
@@ -274,23 +273,24 @@ void loop()
     pixelOutput.show(framebuffer, panelController.getBrightnessScale());
 
 
-    // dlf
-    uint32_t elapsedUs = micros() - startUs;
+    if(DEBUG_PRINT == 3) {
+        uint32_t elapsedUs = micros() - startUs;
 
-    ++loopCount;
-    totalLoopUs += elapsedUs;
-    if (elapsedUs > maxLoopUs)
-        maxLoopUs = elapsedUs;
+        ++loopCount;
+        totalLoopUs += elapsedUs;
+        if (elapsedUs > maxLoopUs)
+            maxLoopUs = elapsedUs;
 
-    if (millis() - lastReport >= 5000) {
-        Serial.printf("Loop: avg=%lu us, max=%lu us, count=%lu\n",
-                      (unsigned long)(totalLoopUs / loopCount),
-                      (unsigned long)maxLoopUs,
-                      (unsigned long)loopCount);
+        if (millis() - lastReport >= 5000) {
+            Serial.printf("Loop: avg=%lu us, max=%lu us, count=%lu\n",
+                          (unsigned long)(totalLoopUs / loopCount),
+                          (unsigned long)maxLoopUs,
+                          (unsigned long)loopCount);
 
-        loopCount = 0;
-        totalLoopUs = 0;
-        maxLoopUs = 0;
-        lastReport = millis();
+            loopCount = 0;
+            totalLoopUs = 0;
+            maxLoopUs = 0;
+            lastReport = millis();
+        }
     }
 }
