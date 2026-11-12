@@ -3,14 +3,9 @@
 #include <Arduino.h>
 
 namespace {
-    //const float TWO_PI = 6.28318530718f;
     struct Wave { float wavelength, angle, amplitude, speed, phase; };
     // Speeds are in cycles per second; wavelengths are in LED pixels.
     const Wave waves[] = {
-        //{23.0f, 0.28f, 0.48f,  0.065f, 0.20f},
-        //{17.0f, 1.83f, 0.28f, -0.047f, 1.70f},
-        //{12.5f, 2.62f, 0.16f,  0.032f, 3.10f},
-        //{28.0f, 1.05f, 0.08f, -0.019f, 4.20f}
     {16.0f, 0.35f, 0.20f,  0.045f, 0.20f},
     {13.0f, 1.45f, 0.22f, -0.053f, 1.70f},
     {11.0f, 2.35f, 0.19f,  0.038f, 3.10f},
@@ -38,7 +33,9 @@ namespace {
 ReflectingPondCore::ReflectingPondCore()
     : mode_(HEIGHT_COLOR), speed_(1.0f), intensity_(0.75f),
       shimmerStrength_(0.65f), shimmerThreshold_(0.76f), shimmerSpeed_(1.0f),
-      lastMs_(0), initialized_(false), phaseTime_(0.0f) {}
+      lastMs_(0), initialized_(false), phaseTime_(0.0f), nextRipple_(0) {
+    for (int i=0; i<MAX_RIPPLES; ++i) ripples_[i].active=false;
+}
 
 void ReflectingPondCore::setRenderMode(RenderMode mode) { mode_ = mode; }
 void ReflectingPondCore::setSpeed(float speed) { speed_ = speed < 0.0f ? 0.0f : speed; }
@@ -49,13 +46,60 @@ void ReflectingPondCore::setShimmerSpeed(float speed) { shimmerSpeed_ = speed < 
 float ReflectingPondCore::clamp01(float x) { return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x); }
 void ReflectingPondCore::setShimmerCoupling(float coupling) { shimmerCoupling_ = clamp01(coupling); }
 
+void ReflectingPondCore::addDrop(float x, float y, uint32_t nowMs) {
+    Ripple &r = ripples_[nextRipple_];
+    r.x=x; r.y=y; r.startMs=nowMs; r.active=true;
+    nextRipple_=(nextRipple_+1)%MAX_RIPPLES;
+}
+
+
+float ReflectingPondCore::rippleAt(float x, float y, uint32_t nowMs) const {
+    const float speed = 6.0f, wavelength = 2.2f, width = 2.5f;
+    float result = 0.0f;
+
+    for (int i = 0; i < MAX_RIPPLES; ++i) {
+        const Ripple &r = ripples_[i];
+        if (!r.active) continue;
+
+        float age = (nowMs - r.startMs) * 0.001f;
+        if (age >= RIPPLE_LIFETIME_MS * 0.001f) continue;
+
+        float dx = x - r.x, dy = y - r.y;
+        float radius = sqrtf(dx * dx + dy * dy);
+        float distance = radius - speed * age;
+
+        // Skip pixels far from the expanding wavefront.
+        if (fabsf(distance) > 3.0f * width)
+            continue;
+
+        // Traveling wave packet: crests and troughs within a fading envelope.
+        float envelope = expf(-0.5f * (distance / width) * (distance / width));
+
+        /*
+        1.1f	Initial ripple amplitude
+        expf(-0.65f * age)	Gradually reduces amplitude as the ripple ages
+        envelope	Concentrates the disturbance around the expanding wavefront
+        cosf(...)	Creates alternating crests and troughs
+        */
+
+        result += 1.1f * expf(-0.65f * age) * envelope * cosf(TWO_PI * distance / wavelength);
+    }
+
+    return result;
+}
+
 float ReflectingPondCore::heightAt(float x, float y, float t) const {
     float h = 0.0f;
     for (int i = 0; i < WAVE_COUNT; ++i) {
         const Wave &w = waves[i];
         // Precomputed direction components could replace these trig calls later.
         float distance = x * cosf(w.angle) + y * sinf(w.angle);
-        float phase = TWO_PI * (distance / w.wavelength + w.speed * t) + w.phase;
+        float cycles = distance / w.wavelength + w.speed * t;
+
+        // Keep the phase within one cycle
+        cycles -= floorf(cycles);
+
+        float phase = TWO_PI * cycles + w.phase;
         h += w.amplitude * sinf(phase);
     }
     return h;
@@ -66,7 +110,12 @@ float ReflectingPondCore::shimmerAt(float x, float y, float t) const {
     for (int i = 0; i < SHIMMER_WAVE_COUNT; ++i) {
         const Wave &w = shimmerWaves[i];
         float distance = x * cosf(w.angle) + y * sinf(w.angle);
-        float phase = TWO_PI * (distance / w.wavelength + w.speed * t) + w.phase;
+        float cycles = distance / w.wavelength + w.speed * t;
+
+        // Keep the phase within one cycle
+        cycles -= floorf(cycles);
+
+        float phase = TWO_PI * cycles + w.phase;
         h += w.amplitude * sinf(phase);
     }
     return 0.5f + 0.5f * h; // normalized to [0, 1]
@@ -102,10 +151,15 @@ void ReflectingPondCore::render(uint32_t nowMs, Color out[HEIGHT][WIDTH]) {
     // Keep phase bounded during very long runtimes.
     if (phaseTime_ > 10000.0f) phaseTime_ -= 10000.0f;
 
+    for (int i=0; i<MAX_RIPPLES; ++i)
+        if (ripples_[i].active && nowMs-ripples_[i].startMs>=RIPPLE_LIFETIME_MS)
+            ripples_[i].active=false;
+
     // One-pixel halo allows centered differences on every display pixel.
     for (int y = 0; y < HEIGHT + 2; ++y)
         for (int x = 0; x < WIDTH + 2; ++x)
-            heights_[y][x] = heightAt(float(x - 1), float(y - 1), phaseTime_);
+            heights_[y][x] = heightAt(float(x - 1), float(y - 1), phaseTime_)
+                + rippleAt(float(x - 1), float(y - 1), nowMs);
 
     for (int y = 0; y < HEIGHT; ++y) {
         for (int x = 0; x < WIDTH; ++x) {
@@ -113,6 +167,7 @@ void ReflectingPondCore::render(uint32_t nowMs, Color out[HEIGHT][WIDTH]) {
             float dx = 0.5f * (heights_[y + 1][x + 2] - heights_[y + 1][x]);
             float dy = 0.5f * (heights_[y + 2][x + 1] - heights_[y][x + 1]);
             float heightLevel = clamp01(0.5f + 0.46f * h);
+
             // Directional light: slopes facing the light are brighter.
             float lightLevel = clamp01(0.5f + 1.4f * (0.75f * dx + 0.65f * dy));
             float level;
@@ -129,9 +184,10 @@ void ReflectingPondCore::render(uint32_t nowMs, Color out[HEIGHT][WIDTH]) {
                 float crest = shimmerAt(float(x), float(y), phaseTime_ * shimmerSpeed_);
                 float excess = clamp01((crest - shimmerThreshold_) /
                                        (1.0f - shimmerThreshold_));
+
                 // Cubic response: weak crests barely glow, rare high crests shine.
                 float highlight = excess * excess * excess * shimmerStrength_;
-             //   float couplingFactor = (1.0f - shimmerCoupling_) + shimmerCoupling_ * heightLevel;
+
                 float couplingFactor = 1.0f + shimmerCoupling_ * (2.0f * heightLevel - 1.0f);
 
                 highlight *= couplingFactor;

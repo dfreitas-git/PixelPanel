@@ -4,7 +4,8 @@
 
 namespace {
     // Five characters maximum per item for the 30x30 display.
-    const char* const MAIN_ITEMS[]  = { "SCENE", "SETUP", "TEST", "GAMES" };
+    //const char* const MAIN_ITEMS[]  = { "SCENE", "SETUP", "TEST", "GAMES" };
+    const char* const MAIN_ITEMS[]  = { "SCENE", "GAMES", "SETUP", "TEST"};
     // These two lists are placeholders for future action handling.
     const char* const PANEL_ITEMS[] = { "BRITE", "DIFFO" };
     const char* const TEST_ITEMS[]  = {
@@ -116,9 +117,9 @@ MenuAction PanelMenu::push(const PanelController& controller) {
     if (currentPage == MenuPage::Main) {
         switch (page.selectedIndex) {
             case 0: changePage(MenuPage::Scenes, controller); break;
-            case 1: changePage(MenuPage::Panel, controller); break;
-            case 2: changePage(MenuPage::Test, controller); break;
-            case 3: changePage(MenuPage::Games, controller); break;
+            case 1: changePage(MenuPage::Games, controller); break;
+            case 2: changePage(MenuPage::Panel, controller); break;
+            case 3: changePage(MenuPage::Test, controller); break;
         }
     } else if (currentPage == MenuPage::Scenes) {
         if (page.selectedIndex < controller.getSceneCount()) {

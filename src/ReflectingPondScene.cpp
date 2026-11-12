@@ -10,7 +10,11 @@ void ReflectingPondScene::begin() {
     pond.setShimmerSpeed(1.0f);
 }
 
-void ReflectingPondScene::processGesture(const GestureEvent& event) { }
+void ReflectingPondScene::processGesture(const GestureEvent& event) {
+    if (event.gesture == WandGesture::ThrustIn)
+        pond.addDrop(float(random(5,25)), float(random(5,25)), millis());
+}
+
 
 void ReflectingPondScene::onSingleClick() {
     using RenderMode = ReflectingPondCore::RenderMode;
