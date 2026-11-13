@@ -52,8 +52,8 @@ void ReflectingPondScene::onSingleClick() {
 void ReflectingPondScene::render(PixelFramebuffer& framebuffer) {
     int32_t now = millis();
     float X, Y;
-    float centerX = 15.0;
-    float centerY = 15.0;
+    float centerX = 14.5;
+    float centerY = 14.5;
     float span = 10.0;
 
     if(skipRunning && (now - nextSkip > 0 )) {
