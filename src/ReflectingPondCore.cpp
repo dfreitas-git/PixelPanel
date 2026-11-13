@@ -53,7 +53,7 @@ void ReflectingPondCore::addDrop(float x, float y, uint32_t nowMs) {
 }
 
 
-float ReflectingPondCore::rippleAt(float x, float y, uint32_t nowMs) const {
+float ReflectingPondCore::rippleAt(float amplitude, float x, float y, uint32_t nowMs) const {
     const float speed = 6.0f, wavelength = 2.2f, width = 2.5f;
     float result = 0.0f;
 
@@ -82,7 +82,7 @@ float ReflectingPondCore::rippleAt(float x, float y, uint32_t nowMs) const {
         cosf(...)	Creates alternating crests and troughs
         */
 
-        result += 1.1f * expf(-0.65f * age) * envelope * cosf(TWO_PI * distance / wavelength);
+        result += amplitude * expf(-0.65f * age) * envelope * cosf(TWO_PI * distance / wavelength);
     }
 
     return result;
@@ -159,7 +159,7 @@ void ReflectingPondCore::render(uint32_t nowMs, Color out[HEIGHT][WIDTH]) {
     for (int y = 0; y < HEIGHT + 2; ++y)
         for (int x = 0; x < WIDTH + 2; ++x)
             heights_[y][x] = heightAt(float(x - 1), float(y - 1), phaseTime_)
-                + rippleAt(float(x - 1), float(y - 1), nowMs);
+                + rippleAt(1.1, float(x - 1), float(y - 1), nowMs);
 
     for (int y = 0; y < HEIGHT; ++y) {
         for (int x = 0; x < WIDTH; ++x) {

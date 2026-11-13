@@ -23,12 +23,12 @@ public:
     void render(uint32_t nowMs, Color out[HEIGHT][WIDTH]);
 
 private:
-    static const uint32_t RIPPLE_LIFETIME_MS = 6000;
+    static const int RIPPLE_LIFETIME_MS = 5000;
     struct Ripple { float x, y; uint32_t startMs; bool active; };
     static const int MAX_RIPPLES = 3;
     Ripple ripples_[MAX_RIPPLES];
     int nextRipple_;
-    float rippleAt(float x, float y, uint32_t nowMs) const;
+    float rippleAt(float amplitude, float x, float y, uint32_t nowMs) const;
     RenderMode mode_;
     float speed_;
     float intensity_;

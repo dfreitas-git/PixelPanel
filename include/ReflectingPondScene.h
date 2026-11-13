@@ -21,4 +21,8 @@ public:
 private:
     ReflectingPondCore pond;
     ReflectingPondCore::Color pixels[30][30];
+    float skipDirection = 0.0f;
+    bool skipRunning = false;
+    uint8_t skipIndex = 0;
+    int32_t nextSkip = 0;
 };
