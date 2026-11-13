@@ -24,5 +24,5 @@ private:
     float skipDirection = 0.0f;
     bool skipRunning = false;
     uint8_t skipIndex = 0;
-    int32_t nextSkip = 0;
+    uint32_t nextSkip = 0;
 };

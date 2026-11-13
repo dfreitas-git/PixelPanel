@@ -50,13 +50,13 @@ void ReflectingPondScene::onSingleClick() {
 }
 
 void ReflectingPondScene::render(PixelFramebuffer& framebuffer) {
-    int32_t now = millis();
+    uint32_t now = millis();
     float X, Y;
     float centerX = 14.5;
     float centerY = 14.5;
     float span = 10.0;
 
-    if(skipRunning && (now - nextSkip > 0 )) {
+    if (skipRunning && (int32_t)(now - nextSkip) >= 0) {
 
         switch(skipIndex) {
             case 0:
@@ -74,14 +74,15 @@ void ReflectingPondScene::render(PixelFramebuffer& framebuffer) {
                 X = centerX + span * cos(skipDirection);
                 break;
 
-            default:
-                skipRunning = false;
-                return;
         }
-
         pond.addDrop(X, Y, now);
         skipIndex++;
-        nextSkip = now + 300;   // time (mS) between skips
+
+        if (skipIndex >= 3)
+            skipRunning = false;
+        else
+            nextSkip = now + 300;   // time (mS) between skips
+
     }
 
     pond.render(millis(), pixels);
