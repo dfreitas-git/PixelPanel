@@ -23,12 +23,15 @@ public:
     void render(uint32_t nowMs, Color out[HEIGHT][WIDTH]);
 
 private:
+
+    // ripple effect (like a pebble drop or skipping stone effect)
     static const int RIPPLE_LIFETIME_MS = 5000;
     struct Ripple { float x, y; uint32_t startMs; bool active; };
     static const int MAX_RIPPLES = 3;
     Ripple ripples_[MAX_RIPPLES];
     int nextRipple_;
     float rippleAt(float amplitude, float x, float y, uint32_t nowMs) const;
+
     RenderMode mode_;
     float speed_;
     float intensity_;

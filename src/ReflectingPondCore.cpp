@@ -159,7 +159,7 @@ void ReflectingPondCore::render(uint32_t nowMs, Color out[HEIGHT][WIDTH]) {
     for (int y = 0; y < HEIGHT + 2; ++y)
         for (int x = 0; x < WIDTH + 2; ++x)
             heights_[y][x] = heightAt(float(x - 1), float(y - 1), phaseTime_)
-                + rippleAt(1.1, float(x - 1), float(y - 1), nowMs);
+                + rippleAt(1.1f, float(x - 1), float(y - 1), nowMs);
 
     for (int y = 0; y < HEIGHT; ++y) {
         for (int x = 0; x < WIDTH; ++x) {
