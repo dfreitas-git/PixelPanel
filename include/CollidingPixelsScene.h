@@ -11,9 +11,9 @@
    the first intersection point.  If you succeed, you move on to the next (harder)
    level.  Final total score is displayed at the end.
    
-   You do have a chance to replay a level if you miss.  Within five seconds, pressing
+   You do have a chance to replay a level if you miss.  Within RETRY_MS, pressing
    the wand buton will restart that level.   Single press on the button any other time 
-   will restart the game from the beginning 
+   will restart the game from the beginning.
  */
 
 class CollidingPixelsScene : public Scene {
@@ -74,11 +74,11 @@ private:
         float& y
     );
 
-    static constexpr uint32_t COUNTDOWN_MS = 3000;
+    static constexpr uint32_t COUNTDOWN_MS = 3000;  // 3,2,1 count down before a level starts
     static constexpr uint32_t RESULT_MS = 1700;
-    static constexpr uint32_t RETRY_MS = 5000;
+    static constexpr uint32_t RETRY_MS = 7000;     // If user single clicks within this time after a miss, the level is restarted
     static constexpr uint32_t GRACE_MS = 180;
-    static constexpr int FINAL_ROUND = 15;
+    static constexpr int FINAL_ROUND = 15;         // Last level implemented
 
     GraphicsPrimitives& graphics_;
     State state_ = State::Ready;
