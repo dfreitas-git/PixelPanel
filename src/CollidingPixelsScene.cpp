@@ -334,7 +334,7 @@ void CollidingPixelsScene::render(PixelFramebuffer& fb) {
             }
             const char digit = char('3' - elapsed / 1000);
             char label[] = {digit, '\0'};
-            drawCentered(fb, label, 12, {200, 200, 200});
+            drawCentered(fb, label, 12, c_.lightgray);
             break;
         }
         case State::Playing: {
@@ -393,22 +393,22 @@ void CollidingPixelsScene::render(PixelFramebuffer& fb) {
         } else {
             snprintf(score, sizeof(score), "%d", roundScore_);
         }
-        drawCentered(fb, score, 20, roundSucceeded_ ? RGB{40, 255, 60} : RGB{255, 40, 40});
+        drawCentered(fb, score, 20, roundSucceeded_ ? c_.pixelgamegreen : c_.pixelgamered);
 
     } else if (state_ == State::Retry) {
         char level[6];
         snprintf(level, sizeof(level), "LEV%d", roundNumber_);
-        drawCentered(fb, level, 22, {128, 0, 0});
-        drawCentered(fb, "CLICK", 15, {60, 160, 255});
-        drawCentered(fb, "TO", 8, {60, 160, 255});
-        drawCentered(fb, "RETRY", 1, {60, 160, 255});
+        drawCentered(fb, level, 22, c_.meduimred);
+        drawCentered(fb, "CLICK", 15, c_.pixelscoreblue);
+        drawCentered(fb, "TO", 8, c_.pixelscoreblue);
+        drawCentered(fb, "RETRY", 1, c_.pixelscoreblue);
 
     } else if (state_ == State::GameOver) {
         char score[8];
-        drawCentered(fb, "END", 23, {255, 70, 50});
+        drawCentered(fb, "END", 23, c_.salmon);
         snprintf(score, sizeof(score), "%d", totalScore_);
-        drawCentered(fb, score, 13, {255, 255, 255});
+        drawCentered(fb, score, 13, c_.gray);
         snprintf(score, sizeof(score), "%d", bestScore_);
-        drawCentered(fb, score, 3, {60, 160, 255});
+        drawCentered(fb, score, 3, c_.pixelscoreblue);
     }
 }

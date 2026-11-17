@@ -91,8 +91,9 @@ private:
     int totalScore_ = 0;
     int bestScore_ = 0; // RAM only; retained while scene object exists
     Round round_ {};
-    Pixel a_ {0, 0, {255, 45, 30}};
-    Pixel b_ {0, 0, {30, 110, 255}};
+    palette c_;
+    Pixel a_ {0, 0, c_.salmon};
+    Pixel b_ {0, 0, c_.pixelgameblue};
 
     void enter(State state, uint32_t now);
     void startNewGame();
