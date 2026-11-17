@@ -14,11 +14,11 @@ void Pacman1Scene::processPose(const WandPacket& packet) {
 
     // Roll controls eyeball position
     int rollInDegrees = constrain(round(packet.roll * 180.0f / PI), -45, 45);
-    settings.speed = map(rollInDegrees, -45, 45, 0, 99);
+    settings.speed = map(rollInDegrees, -45, 45, 25, 250);
 
     // Pitch controls blink
     int pitchInDegrees = constrain(round(packet.pitch * 180.0f / PI), -45, 45);
-    settings.vertPosition= map(pitchInDegrees, -45, 45, 0, 29);
+    settings.vertPosition= map(pitchInDegrees, -45, 45, 5, 25);
 }
 
 void Pacman1Scene::processGesture( const GestureEvent& event)
@@ -26,21 +26,12 @@ void Pacman1Scene::processGesture( const GestureEvent& event)
     switch (event.gesture) {
 
         case WandGesture::Swipe:
-            if (DEBUG_PRINT == 1) {
-                Serial.print(F("Swipe gesture detected. Angle: "));
-                Serial.println(event.swipeDirection * 180.0f / PI);
-            }
             break;
 
         case WandGesture::ThrustIn:
-            if (DEBUG_PRINT == 1)
-                Serial.println(F("ThrustIn gesture detected"));
-
             break;
 
         case WandGesture::ThrustOut:
-            if (DEBUG_PRINT == 1)
-                Serial.println(F("ThrustOut gesture detected"));
             break;
 
         default:

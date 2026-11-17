@@ -25,4 +25,5 @@ public:
 
 private:
     GraphicsAnimations& gAnim;
+    FireworksSettings settings{};
 };
