@@ -57,6 +57,7 @@ dlf  9/22/2026
 #include "TestScene.h"
 #include "CollidingPixelsScene.h"
 #include "ReflectingPondScene.h"
+#include "OscilloscopeScene.h"
 
 
 
@@ -81,6 +82,7 @@ CheckerBoardScene checkerBoardScene(gAnim);
 EyeballScene eyeballScene(gAnim);
 Pacman1Scene pacman1Scene(gAnim);
 ReflectingPondScene reflectingPondScene;
+OscilloscopeScene oscilloscopeScene(gPrim);
 
 // test scenes
 TestScene testScene(testPanel);
@@ -167,6 +169,7 @@ void setup()
     panelController.addScene(eyeballScene);            // index3
     panelController.addScene(pacman1Scene);            // index4
     panelController.addScene(reflectingPondScene);     // index5
+    panelController.addScene(oscilloscopeScene);       // index6
 
     panelController.addGames(collidingPixelsScene);    // games index0
 

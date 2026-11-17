@@ -2,9 +2,7 @@
 #include "CheckerBoardScene.h"
 #include "Globals.h"
 
-CheckerBoardScene::CheckerBoardScene( GraphicsAnimations& animations) : gAnim(animations)
-{
-}
+CheckerBoardScene::CheckerBoardScene( GraphicsAnimations& animations) : gAnim(animations) { }
 
 void CheckerBoardScene::begin() {
     // None for this scene
