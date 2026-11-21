@@ -59,7 +59,7 @@ dlf  9/22/2026
 #include "ReflectingPondScene.h"
 #include "OscilloscopeScene.h"
 #include "ArchimedeanSpiralScene.h"
-
+#include "MarshmallowRoastScene.h"
 
 
 PanelRadio panelRadio;
@@ -91,6 +91,7 @@ TestScene testScene(testPanel);
 
 // game scenes
 CollidingPixelsScene collidingPixelsScene(gPrim);
+MarshmallowRoastScene marshmallowRoastScene(gPrim);
 
 PanelController panelController;
 PanelMenu panelMenu(gPrim);
@@ -175,6 +176,7 @@ void setup()
     panelController.addScene(archimedeanSpiralScene);  // index7
 
     panelController.addGames(collidingPixelsScene);    // games index0
+    panelController.addGames(marshmallowRoastScene);    // games index0
 
     panelController.selectScene(0);   // Start with shootingStars
     panelController.selectGames(0);   // For Games, start with ColligingPixels
