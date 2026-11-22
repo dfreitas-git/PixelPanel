@@ -10,4 +10,5 @@
 // 1 - Gesture detection prints
 // 2 - Diffuser settings printed
 // 3 - Main loop timeing to check refresh rate
+// 4 - Marshmallow Roasting temperature/doneness tracing
 #define DEBUG_PRINT 0   

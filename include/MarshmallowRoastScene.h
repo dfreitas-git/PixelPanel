@@ -23,10 +23,13 @@ public:
     void onSingleClick() override;
     void processPose(const WandPacket& packet) override;
     void render(PixelFramebuffer& framebuffer) override;
-    int preferredDiffuserPosition() const override { return 0; }
+    int preferredDiffuserPosition() const override { return 10; }
 
 private:
     enum class State { Roasting, Result, Burned };
+
+    GraphicsPrimitives& graphics_;
+    palette c_;
 
      struct Flame {
         int v1x,v1y;    
@@ -35,29 +38,53 @@ private:
         RGB color;
     };
 
-    palette c_;
+     struct Stick {
+        float originX = 39.0;
+        float originY = 17.0;    
+        float endX = 15.0;
+        float endY = 17.0;
+        float length = 25.0;
+        float angle = PI;      // radians
+    };
+    Stick stick_;
+    RGB stickColor_ = c_.darkbrown;
 
-    GraphicsPrimitives& graphics_;
+    struct Marshmallow {
+        float x;
+        float y;
+        float width;
+        float height;
+        float angle;      // radians
+        float temperature;
+        float doneness;
+    };
+
+    Marshmallow mm_ = {
+        stick_.endX,
+        stick_.endY,
+        6.0f,
+        6.0f,
+        stick_.angle,      // radians
+        0.0f,
+        0.0f
+    };
+    RGB mmColor_ = c_.white;
+
+    struct ExtraBrowning {
+        int x;
+        int y;
+        float bf;
+    };
+
     State state_ = State::Roasting;
     uint32_t stateStartMs_ = 0;
     uint32_t lastRenderMs_ = 0;
     uint32_t lastPhysicsMs_ = 0;
     uint32_t lastFireMs_ = 0;
+    float ignitionTime_ = 0.0; // in seconds
 
     uint16_t const RENDER_PERIOD_MS = 20;
     uint16_t const FIRE_PERIOD_MS = 50;
-
-    RGB marshmallowColor_ = c_.white;
-
-    float temperature_ = 0.0f;
-    float doneness_ = 0.0f;
-
-    float const stickOriginX_ = 39.0;
-    float const stickOriginY_ = 17.0;
-    float stickEndX_ = 15.0;
-    float stickEndY_ = 17.0;
-    float stickLength_ = 25.0;
-    float stickAngle_ = PI;
 
     uint32_t roundStartMs = 0;
     int roundScore_ = 0;
@@ -74,12 +101,39 @@ private:
 
     int rXoff(int x, int range);
     int rYoff(int y, int range);
-    Flame flame_[4];
+    static constexpr  uint8_t NUMBER_OF_FLAMES = 10; 
+    Flame flame_[NUMBER_OF_FLAMES];
     RGB flameColors_[2] = {c_.red,c_.yellow};
+    float fireIntensity_ = 1.0;    // used for "flare-ups"
+
+    // how much faster some marshmallow pixels brown than others
+    static constexpr uint8_t EXTRA_BROWNING_PIXELS = 6;
+    ExtraBrowning browningFactor_[EXTRA_BROWNING_PIXELS];   
+
+    static constexpr float COAL_Y = 4.0;
+
+    // Marshmallow "sprite"
+    static constexpr int MM_SIZE = 6;
+    RGB mmSpritePixels_[MM_SIZE * MM_SIZE];
+
+    RGB lerpColor(const RGB& a, const RGB& b, float t);
     void renderFire(PixelFramebuffer& fb);
     void renderMarshmallow(PixelFramebuffer& fb);
     void renderStick(PixelFramebuffer& fb);
     void renderScore(PixelFramebuffer& fb);
     void drawCentered(PixelFramebuffer& fb, const char* text, int y, RGB color);
+    void fillRectSprite(RGB* rectSprite, RGB color);
+    RGB  getDonenessColor(float doneness);
+    void initExtraBrowning();
+
+    // cooking constants
+    static constexpr float AMBIENT_TEMP = 20.0f;   // degrees-c
+    static constexpr float HEATING_RATE = 80.0f;   // degrees/sec
+    static constexpr float HEAT_SCALE = 5.0f;      // pixels
+    static constexpr float COOLING_RATE = 0.15f;    // 1/sec
+    static constexpr float COOKING_THRESHOLD = 80.0f; 
+    static constexpr float COOKING_RATE = 0.15f; 
+    static constexpr float IGNITION_TEMP = 180.0f; // degrees-c
+    static constexpr float IGNITION_DELAY = .75f;  // sec
 
 };
