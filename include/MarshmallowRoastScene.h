@@ -113,8 +113,9 @@ private:
     static constexpr float COAL_Y = 4.0;
 
     // Marshmallow "sprite"
-    static constexpr int MM_SIZE = 6;
-    RGB mmSpritePixels_[MM_SIZE * MM_SIZE];
+    static constexpr int MM_SIZEX = 6;
+    static constexpr int MM_SIZEY = 6;
+    RGB mmSpritePixels_[MM_SIZEY][MM_SIZEX];
 
     RGB lerpColor(const RGB& a, const RGB& b, float t);
     void renderFire(PixelFramebuffer& fb);
@@ -122,7 +123,7 @@ private:
     void renderStick(PixelFramebuffer& fb);
     void renderScore(PixelFramebuffer& fb);
     void drawCentered(PixelFramebuffer& fb, const char* text, int y, RGB color);
-    void fillRectSprite(RGB* rectSprite, RGB color);
+    void fillRectSprite(RGB color);
     RGB  getDonenessColor(float doneness);
     void initExtraBrowning();
 

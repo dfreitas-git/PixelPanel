@@ -285,10 +285,10 @@ void MarshmallowRoastScene::initExtraBrowning() {
     }
 }
 
-void MarshmallowRoastScene::fillRectSprite(RGB* rectSprite, RGB color) {
-    for(int y=0; y<MM_SIZE; y++) {
-        for(int x=0; x<MM_SIZE; x++) {
-            rectSprite[y * MM_SIZE + x] =  color;
+void MarshmallowRoastScene::fillRectSprite(RGB color) {
+    for (int y = 0; y < MM_SIZEY; y++) {
+        for (int x = 0; x < MM_SIZEX; x++) {
+            mmSpritePixels_[y][x] = color;
         }
     }
 }
@@ -303,16 +303,16 @@ void MarshmallowRoastScene::renderMarshmallow(PixelFramebuffer& fb) {
 
     mmColor_ = getDonenessColor(mm_.doneness);
 
-    fillRectSprite(mmSpritePixels_,mmColor_);
+    fillRectSprite(mmColor_);
 
     // Now pixels from the extraBrowning set that get an accelerated doneness
     for(int i=0; i<EXTRA_BROWNING_PIXELS; i++) {
-        mmSpritePixels_[browningFactor_[i].y * MM_SIZE + browningFactor_[i].x] =
+        mmSpritePixels_[browningFactor_[i].y] [browningFactor_[i].x] =
             getDonenessColor(mm_.doneness * browningFactor_[i].bf);
     }
 
     // need to send in degrees (not radians) as that's what the library expects
-    graphics_.drawTexturedRect( fb.data(), x, y, MM_SIZE, MM_SIZE, 180.0f - angle * 180.0f / PI, mmSpritePixels_);
+    graphics_.drawTexturedRect( fb.data(), x, y, MM_SIZEX, MM_SIZEY, 180.0f - angle * 180.0f / PI, &mmSpritePixels_[0][0]);
 }
 
 void MarshmallowRoastScene::updateStick() {
