@@ -248,12 +248,10 @@ RGB MarshmallowRoastScene::getDonenessColor(float doneness) {
         lerpedColor = lerpColor(c_.white, c_.mmGolden, doneness / 50.0f);
     }
     else if (doneness < 100.0f) {
-        lerpedColor = lerpColor(c_.mmGolden, c_.mmToasted,
-                             (doneness - 50.0f) / 50.0f);
+        lerpedColor = lerpColor(c_.mmGolden, c_.mmToasted, (doneness - 50.0f) / 50.0f);
     }
     else {
-        lerpedColor = lerpColor(c_.mmToasted, c_.mmCharred,
-                             (doneness - 100.0f) / 50.0f);
+        lerpedColor = lerpColor(c_.mmToasted, c_.mmCharred, (doneness - 100.0f) / 50.0f);
     }
     return lerpedColor;
 }
