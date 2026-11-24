@@ -76,19 +76,41 @@ private:
         float bf;
     };
 
+    struct SmokeParticle {
+        float x = 0.0f;
+        float y = 0.0f;
+        float vx = 0.0f;
+        float vy = 10.0;
+        uint32_t born = 0;
+        uint32_t lastUpdateMs;
+        uint16_t maxAge = defaultMaxSmokeAge_;
+        bool  active = false;
+        uint8_t decay = 5;
+        RGB   color;
+    };
+
+    static constexpr uint16_t defaultMaxSmokeAge_ = 1000;
+    static constexpr uint8_t NUM_SMOKE_PARTICLES = 40;
+    static constexpr float IGNITION_DELAY = .75f;  // sec
+    SmokeParticle sp_[NUM_SMOKE_PARTICLES];
+    SmokeParticle& getSmokeParticle(int i);
+
     State state_ = State::Roasting;
     uint32_t stateStartMs_ = 0;
     uint32_t lastRenderMs_ = 0;
     uint32_t lastPhysicsMs_ = 0;
     uint32_t lastFireMs_ = 0;
+    uint32_t lastSmokeMs_ = 0;
+    uint32_t lastSmokeInitMs_ = 0;
     float ignitionTime_ = 0.0; // in seconds
 
     uint16_t const RENDER_PERIOD_MS = 20;
     uint16_t const FIRE_PERIOD_MS = 50;
+    uint16_t const SMOKE_PERIOD_MS = 30;
 
     uint32_t roundStartMs = 0;
-    int roundScore_ = 0;
-    int bestScore_ = 0; // RAM only; retained while scene object exists
+    int roundTimeMs_ = 0; 
+    int bestTimeMs_ = 0; // RAM only; retained while scene object exists
 
     void enter(State state);
     void startNewGame();
@@ -97,6 +119,8 @@ private:
     void updateFire();
     void updateMarshmallow(float dt);
     void updateStick();
+    void initSmoke();
+    void updateSmoke();
     void burnMarshmallow();
 
     int rXoff(int x, int range);
@@ -121,6 +145,7 @@ private:
     void renderFire(PixelFramebuffer& fb);
     void renderMarshmallow(PixelFramebuffer& fb);
     void renderStick(PixelFramebuffer& fb);
+    void renderSmoke(PixelFramebuffer& fb);
     void renderScore(PixelFramebuffer& fb);
     void drawCentered(PixelFramebuffer& fb, const char* text, int y, RGB color);
     void fillRectSprite(RGB color);
@@ -135,6 +160,6 @@ private:
     static constexpr float COOKING_THRESHOLD = 80.0f; 
     static constexpr float COOKING_RATE = 0.15f; 
     static constexpr float IGNITION_TEMP = 180.0f; // degrees-c
-    static constexpr float IGNITION_DELAY = .75f;  // sec
+    static constexpr float SMOKE_TEMP  =   100.0f; // degrees-c
 
 };

@@ -10,23 +10,18 @@ void MarshmallowRoastScene::begin() {
     lastRenderMs_ = now;
     lastPhysicsMs_ = now;
     lastFireMs_ = now;
+    bestTimeMs_ = 0;
 
     updateStick();
     updateFire();
 }
 
 void MarshmallowRoastScene::onSingleClick() { 
-    switch (state_) {
-        case State::Result :
-        case State::Burned :
+    if(state_ == State::Result || state_ == State::Burned ) {
             startNewGame(); 
-            break;
-
-        case State::Roasting :
-            finishRound();
-            break;
     }
 }
+
 void MarshmallowRoastScene::processPose(const WandPacket& packet) {
 
     // Pitch controls the height of the marshmallow over the fire 
@@ -40,8 +35,9 @@ void MarshmallowRoastScene::enter(State state) {
 }
 
 void MarshmallowRoastScene::startNewGame() {
-    roundScore_ = 0;
     roundStartMs = millis();
+    lastSmokeMs_ = 0;
+    lastSmokeInitMs_ = 0;
     ignitionTime_ = 0.0f;
     mm_.doneness = 0.0f;
     mm_.temperature = AMBIENT_TEMP;
@@ -66,6 +62,11 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
 
     if (state_ == State::Roasting) {
         updateMarshmallow(dt);
+         
+        if (now - lastSmokeMs_ >= SMOKE_PERIOD_MS) {
+            lastSmokeMs_=now;
+            updateSmoke();
+        }
     }
 
     if (now - lastFireMs_ >= FIRE_PERIOD_MS) {
@@ -81,6 +82,7 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
             renderStick(fb);
             renderMarshmallow(fb);
             renderFire(fb);
+            renderSmoke(fb);
             break;
 
         case State::Result :
@@ -97,39 +99,25 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
 }
 
 void MarshmallowRoastScene::burnMarshmallow() {
-    roundScore_ = 0;
     Serial.println("Marshmallow Burned!");
     enter(State::Burned);
 }
 
 void MarshmallowRoastScene::finishRound() {
-
-    /*  Doneness scoring scale
-    Doneness	Interpretation
-    0	 Raw, white
-    25	 Lightly toasted
-    50	 Golden
-    75	 Nicely browned
-    100	 Perfectly roasted
-    125	 Overdone
-    150+ Charred
-    */
-
-    // Compute the score here
-    // roundScore_ = computeRoundScore();
-    // if(froundScore_ > bestScore_) {
-    // bestScore_ = roundScore_;
-
+    roundTimeMs_ = millis() - roundStartMs;
+    if(bestTimeMs_ == 0 || roundTimeMs_ < bestTimeMs_) {
+        bestTimeMs_ = roundTimeMs_;
+    }
     enter(State::Result);
 }
 
 void MarshmallowRoastScene::renderScore(PixelFramebuffer& fb) {
-    drawCentered(fb, "SCORE", 22, c_.blue);
-    char score[8];
-    snprintf(score, sizeof(score), "%d", roundScore_);
-    drawCentered(fb, score, 12, c_.yellow);
-    snprintf(score, sizeof(score), "%d", bestScore_);
-    drawCentered(fb, score, 3, c_.green);
+    drawCentered(fb, "TIME", 22, c_.blue);
+    char time[8];
+    snprintf(time, sizeof(time), "%d", roundTimeMs_/1000);
+    drawCentered(fb, time, 12, c_.yellow);
+    snprintf(time, sizeof(time), "%d", bestTimeMs_/1000);
+    drawCentered(fb, time, 2, c_.green);
 }
 
 int MarshmallowRoastScene::rXoff(int x, int range) {
@@ -211,6 +199,14 @@ void MarshmallowRoastScene::updateMarshmallow(float dt) {
     float cookingTemp = max(0.0f, mm_.temperature - COOKING_THRESHOLD);
     mm_.doneness += cookingTemp * COOKING_RATE * dt;
 
+    if(mm_.doneness >= 100) {
+        finishRound();
+        return;
+    }
+
+    if(mm_.temperature > SMOKE_TEMP) {
+        initSmoke();
+    }
     if (mm_.temperature > IGNITION_TEMP) {
         ignitionTime_ += dt;
     } else {
@@ -247,11 +243,11 @@ RGB MarshmallowRoastScene::getDonenessColor(float doneness) {
     if (doneness < 50.0f) {
         lerpedColor = lerpColor(c_.white, c_.mmGolden, doneness / 50.0f);
     }
-    else if (doneness < 100.0f) {
-        lerpedColor = lerpColor(c_.mmGolden, c_.mmToasted, (doneness - 50.0f) / 50.0f);
+    else if (doneness < 75.0f) {
+        lerpedColor = lerpColor(c_.mmGolden, c_.mmToasted, (doneness - 50.0f) / 25.0f);
     }
     else {
-        lerpedColor = lerpColor(c_.mmToasted, c_.mmCharred, (doneness - 100.0f) / 50.0f);
+        lerpedColor = lerpColor(c_.mmToasted, c_.mmDark, (doneness - 75.0f) / 25.0f);
     }
     return lerpedColor;
 }
@@ -318,6 +314,70 @@ void MarshmallowRoastScene::updateStick() {
     stick_.endY = stick_.originY - stick_.length * sinf(stick_.angle);
 }
 
+void MarshmallowRoastScene::initSmoke() {
+
+    // Stagger smoke particles to create a cloud effect. More when the marahmallow temperature rises
+    float smokeMultiplier = map(mm_.temperature, SMOKE_TEMP, IGNITION_TEMP,36,6) / 6.0;
+    uint32_t spawnTime = constrain(SMOKE_PERIOD_MS * smokeMultiplier, SMOKE_PERIOD_MS, SMOKE_PERIOD_MS * 6);
+
+    if(millis() - lastSmokeInitMs_ > spawnTime) {
+        lastSmokeInitMs_ = millis();
+
+        // See if we have any available smoke particles to use
+        // Only spawn the first available one
+        for (int i = 0; i < NUM_SMOKE_PARTICLES; i++) {
+            if(!sp_[i].active) {
+                sp_[i].active = true;
+                int halfWidth = mm_.width/2;
+                sp_[i].x = mm_.x + random(-(halfWidth-1),halfWidth+1);
+                sp_[i].y = mm_.y + mm_.height/2;
+                sp_[i].decay = sp_[i].decay + random(-2,3);
+                sp_[i].color = c_.darkgray;
+                sp_[i].lastUpdateMs = lastSmokeInitMs_;
+                sp_[i].born = lastSmokeInitMs_;
+                int ageMultiplier = map(mm_.temperature, SMOKE_TEMP, IGNITION_TEMP,1,4);
+                sp_[i].maxAge = defaultMaxSmokeAge_ * ageMultiplier;
+                break;
+            }
+        }
+    }
+}
+
+void MarshmallowRoastScene::updateSmoke() {
+    for (int i = 0; i < NUM_SMOKE_PARTICLES; i++) {
+        if(sp_[i].active) {
+            uint32_t now = millis();
+            float dt_s = static_cast <float>(now - sp_[i].lastUpdateMs)/1000.0;  //dt in sec
+            sp_[i].lastUpdateMs = now;
+            sp_[i].x +=  sp_[i].vx * dt_s;
+            sp_[i].y +=  sp_[i].vy * dt_s;
+            uint8_t r = sp_[i].color.r;
+            uint8_t g = sp_[i].color.g;
+            uint8_t b = sp_[i].color.b;
+            sp_[i].color.r = (r > sp_[i].decay) ? (r - sp_[i].decay) : 0;
+            sp_[i].color.g = (g > sp_[i].decay) ? (g - sp_[i].decay) : 0;
+            sp_[i].color.b = (b > sp_[i].decay) ? (b - sp_[i].decay) : 0;
+
+            if(now - sp_[i].born > sp_[i].maxAge) {
+                sp_[i].active = false;
+            }
+        }
+    }
+}
+
+void MarshmallowRoastScene::renderSmoke(PixelFramebuffer& fb) {
+    for (int i = 0; i < NUM_SMOKE_PARTICLES; i++) {
+        if(sp_[i].active) {
+            //graphics_.writePixel(fb.data(), sp_[i].x, sp_[i].y, sp_[i].color);
+
+            int length = 2;
+            if(sp_[i].y <= ROWS - length) {
+                graphics_.drawLine(fb.data(), sp_[i].x, sp_[i].y,sp_[i].x, sp_[i].y+length-1, 1, sp_[i].color);
+            }
+        }
+    }
+}
+
 void MarshmallowRoastScene::renderStick(PixelFramebuffer& fb) {
     graphics_.drawLine(fb.data(),lroundf(stick_.originX),lroundf(stick_.originY),lroundf(stick_.endX),lroundf(stick_.endY),1,stickColor_);  
 }
@@ -327,4 +387,8 @@ void MarshmallowRoastScene::drawCentered(PixelFramebuffer& fb, const char* text,
     int len = 0;
     while (text[len] != '\0') ++len;
     graphics_.drawString(fb.data(), text, (PANEL_WIDTH - 6 * len) / 2, y, color, {0, 0, 0});
+}
+
+MarshmallowRoastScene::SmokeParticle& MarshmallowRoastScene::getSmokeParticle(int i) {
+    return sp_[i];
 }
