@@ -85,12 +85,13 @@ private:
         uint32_t lastUpdateMs;
         uint16_t maxAge = defaultMaxSmokeAge_;
         bool  active = false;
-        uint8_t decay = 5;
+        uint8_t decay = defaultDecay_;
         RGB   color;
     };
 
-    static constexpr uint16_t defaultMaxSmokeAge_ = 1000;
-    static constexpr uint8_t NUM_SMOKE_PARTICLES = 40;
+    static constexpr uint16_t defaultMaxSmokeAge_ = 2000;
+    static constexpr uint16_t defaultDecay_ = 4;
+    static constexpr uint8_t NUM_SMOKE_PARTICLES = 50;
     static constexpr float IGNITION_DELAY = .75f;  // sec
     SmokeParticle sp_[NUM_SMOKE_PARTICLES];
     SmokeParticle& getSmokeParticle(int i);

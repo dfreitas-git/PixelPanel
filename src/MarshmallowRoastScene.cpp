@@ -43,6 +43,11 @@ void MarshmallowRoastScene::startNewGame() {
     mm_.temperature = AMBIENT_TEMP;
     mmColor_ = c_.white;
     initExtraBrowning();
+
+    for (auto& particle : sp_) {
+        particle.active = false;
+    }
+
     enter(State::Roasting);
 }
 
@@ -331,7 +336,7 @@ void MarshmallowRoastScene::initSmoke() {
                 int halfWidth = mm_.width/2;
                 sp_[i].x = mm_.x + random(-(halfWidth-1),halfWidth+1);
                 sp_[i].y = mm_.y + mm_.height/2;
-                sp_[i].decay = sp_[i].decay + random(-2,3);
+                sp_[i].decay = defaultDecay_ + random(-2, 3);
                 sp_[i].color = c_.darkgray;
                 sp_[i].lastUpdateMs = lastSmokeInitMs_;
                 sp_[i].born = lastSmokeInitMs_;
