@@ -36,16 +36,22 @@ void MarshmallowRoastScene::enter(State state) {
 
 void MarshmallowRoastScene::startNewGame() {
     roundStartMs = millis();
-    lastSmokeMs_ = 0;
-    lastSmokeInitMs_ = 0;
+    lastParticleMs_ = 0;
+    lastParticleInitMs_ = 0;
     ignitionTime_ = 0.0f;
+    marshmallowFalling_ = false;
+    marshmallowBurned_ = false;
+    sparksInited_=false;
     mm_.doneness = 0.0f;
     mm_.temperature = AMBIENT_TEMP;
     mmColor_ = c_.white;
     initExtraBrowning();
 
+    // Reset any still active particles
     for (auto& particle : sp_) {
         particle.active = false;
+        particle.vy = defaultVy_;
+        particle.vx = 0.0;
     }
 
     enter(State::Roasting);
@@ -68,9 +74,17 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
     if (state_ == State::Roasting) {
         updateMarshmallow(dt);
          
-        if (now - lastSmokeMs_ >= SMOKE_PERIOD_MS) {
-            lastSmokeMs_=now;
-            updateSmoke();
+        if (now - lastParticleMs_ >= PARTICLE_PERIOD_MS) {
+            lastParticleMs_=now;
+            updateParticle();
+        }
+    }
+
+    if (state_ == State::Burned) {
+        if (now - lastParticleMs_ >= PARTICLE_PERIOD_MS) {
+            lastParticleMs_=now;
+            updateBurned(dt);
+            updateParticle();
         }
     }
 
@@ -96,15 +110,15 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
 
         case State::Burned:
             renderStick(fb);
-          // Implement this function once I figure out what I want the burning marshmallow to look like...
-          //  renderBurned(fb);
+            renderBurned(fb);
             renderFire(fb);
+            renderSmoke(fb);
             break;
     }
 }
 
 void MarshmallowRoastScene::burnMarshmallow() {
-    Serial.println("Marshmallow Burned!");
+    marshmallowBurned_ = true;
     enter(State::Burned);
 }
 
@@ -117,12 +131,19 @@ void MarshmallowRoastScene::finishRound() {
 }
 
 void MarshmallowRoastScene::renderScore(PixelFramebuffer& fb) {
-    drawCentered(fb, "TIME", 22, c_.blue);
-    char time[8];
-    snprintf(time, sizeof(time), "%d", roundTimeMs_/1000);
-    drawCentered(fb, time, 12, c_.yellow);
-    snprintf(time, sizeof(time), "%d", bestTimeMs_/1000);
-    drawCentered(fb, time, 2, c_.green);
+
+    char str[8];
+    if(marshmallowBurned_) {
+        drawCentered(fb, "BURN!",22, c_.yellow);
+        drawCentered(fb, "NO", 13, c_.red);
+        drawCentered(fb, "SCORE", 4, c_.red);
+    } else {
+        drawCentered(fb, "TIME",22, c_.blue);
+        snprintf(str, sizeof(str), "Y:%d", roundTimeMs_/1000);
+        drawCentered(fb, str, 12, c_.yellow);
+        snprintf(str, sizeof(str), "B:%d", bestTimeMs_/1000);
+        drawCentered(fb, str, 2, c_.green);
+    }
 }
 
 int MarshmallowRoastScene::rXoff(int x, int range) {
@@ -209,8 +230,8 @@ void MarshmallowRoastScene::updateMarshmallow(float dt) {
         return;
     }
 
-    if(mm_.temperature > SMOKE_TEMP) {
-        initSmoke();
+    if(mm_.temperature > PARTICLE_START_TEMP) {
+        initParticle(ParticleType::Smoke);
     }
     if (mm_.temperature > IGNITION_TEMP) {
         ignitionTime_ += dt;
@@ -294,11 +315,9 @@ void MarshmallowRoastScene::fillRectSprite(RGB color) {
 
 void MarshmallowRoastScene::renderMarshmallow(PixelFramebuffer& fb) {
 
-    // if the marshmallow burns, it falls away from the stick, use marshmallow coords else we can follow the stick
-    bool falling = (state_ == State::Burned);
-    float x = falling ? mm_.x : stick_.endX;
-    float y = falling ? mm_.y : stick_.endY;
-    float angle = falling ? mm_.angle : stick_.angle;
+    float x =  stick_.endX;
+    float y =  stick_.endY;
+    float angle = stick_.angle;
 
     mmColor_ = getDonenessColor(mm_.doneness);
 
@@ -314,42 +333,116 @@ void MarshmallowRoastScene::renderMarshmallow(PixelFramebuffer& fb) {
     graphics_.drawTexturedRect( fb.data(), x, y, MM_SIZEX, MM_SIZEY, 180.0f - angle * 180.0f / PI, &mmSpritePixels_[0][0]);
 }
 
+void MarshmallowRoastScene::updateBurned(float dt) {
+    mm_.temperature = IGNITION_TEMP;
+    if(!sparksInited_) {
+        initParticle(ParticleType::Smoke);
+    }
+
+    if (!marshmallowFalling_) {
+        mm_.x = stick_.endX;
+        mm_.y = stick_.endY;
+
+        if (mm_.y >= DROP_HEIGHT) {
+            marshmallowFalling_ = true;
+            mm_.vy = 0.0f;
+        }
+    } else {
+        mm_.vy -= DROP_RATE * dt;
+        mm_.y += mm_.vy * dt;
+        if(mm_.y <= COAL_Y)
+            mm_.y = 0.0;
+    }
+    if(mm_.y <= COAL_Y) {
+
+        // init a bunch of smoke colored like sparks to float up
+        if(!sparksInited_) {
+            sparkStartMs_ = millis();
+            sparksInited_ = true;
+        }
+        // Init sparks only for a short period so it looks like a short flare up of sparks
+        if(millis() - sparkStartMs_ < SPARK_PERIOD) {
+            initParticle(ParticleType::Spark);
+        }
+        if(millis() - sparkStartMs_ > SPARKS_DONE) {
+            enter(State::Result);
+        }
+    }
+}
+
+void MarshmallowRoastScene::renderBurned(PixelFramebuffer& fb) {
+
+    // if the marshmallow burns, it falls away from the stick, 
+    // use marshmallow coords else follow the stick
+    float x,y;
+
+    if (marshmallowFalling_) {
+        x = mm_.x;
+        y = mm_.y;
+    } else {
+        x = stick_.endX;
+        y = stick_.endY;
+    }
+    float angle = stick_.angle;
+
+    // Draw the burnt outline of the marshmallow
+    graphics_.drawRect(fb.data(),x-mm_.width/2, y-mm_.width/2, x+mm_.width/2, y+mm_.width/2, 180.0f - angle * 180.0f / PI ,c_.mmCharred);
+
+    // Overlap a flame pattern
+        graphics_.drawTriangle(fb.data(),{int(x-mm_.width/2+random(0,2)), int(y)},{int(x-2), int(y+random(0,4))},{int(x-1+random(-1,1)), int(y)},flameColors_[random(0,2)]);
+        graphics_.drawTriangle(fb.data(),{int(x+1+random(0,2)), int(y)},{int(x+2), int(y+random(0,4))},{int(x+mm_.width/2+random(-1,1)), int(y)},flameColors_[random(0,2)]);
+        graphics_.drawTriangle(fb.data(),{int(x-2), int(y-mm_.height/2)},{int(x-2-random(0,2)),int( y-1+random(0,4))},{int(x-1), int(y-mm_.height/2)},flameColors_[random(0,2)]);
+        graphics_.drawTriangle(fb.data(),{int(x-1), int(y-mm_.height/2)},{int(x-random(0,2)),int( y-1+random(0,4))},{int(x+1), int(y-mm_.height/2)},flameColors_[random(0,2)]);
+        graphics_.drawTriangle(fb.data(),{int(x+1), int(y-mm_.height/2)},{int(x+2-random(0,2)),int( y-1+random(0,4))},{int(x+2), int(y-mm_.height/2)},flameColors_[random(0,2)]);
+}
+
 void MarshmallowRoastScene::updateStick() {
     stick_.endX = stick_.originX + stick_.length * cosf(stick_.angle);
     stick_.endY = stick_.originY - stick_.length * sinf(stick_.angle);
 }
 
-void MarshmallowRoastScene::initSmoke() {
+void MarshmallowRoastScene::initParticle(ParticleType type) {
 
-    // Stagger smoke particles to create a cloud effect. More when the marahmallow temperature rises
-    float smokeMultiplier = map(mm_.temperature, SMOKE_TEMP, IGNITION_TEMP,36,6) / 6.0;
-    uint32_t spawnTime = constrain(SMOKE_PERIOD_MS * smokeMultiplier, SMOKE_PERIOD_MS, SMOKE_PERIOD_MS * 6);
+    // Stagger particles to create a cloud effect. More when the marahmallow temperature rises
+    float particleMultiplier = map(mm_.temperature, PARTICLE_START_TEMP, IGNITION_TEMP,36,6) / 6.0;
+    uint32_t spawnTime = constrain(PARTICLE_PERIOD_MS * particleMultiplier, PARTICLE_PERIOD_MS, PARTICLE_PERIOD_MS * 6);
 
-    if(millis() - lastSmokeInitMs_ > spawnTime) {
-        lastSmokeInitMs_ = millis();
+    if(millis() - lastParticleInitMs_ > spawnTime) {
+        lastParticleInitMs_ = millis();
 
-        // See if we have any available smoke particles to use
+        // See if we have any available particles to use
         // Only spawn the first available one
-        for (int i = 0; i < NUM_SMOKE_PARTICLES; i++) {
+        for (int i = 0; i < NUM_PARTICLES; i++) {
             if(!sp_[i].active) {
                 sp_[i].active = true;
                 int halfWidth = mm_.width/2;
                 sp_[i].x = mm_.x + random(-(halfWidth-1),halfWidth+1);
                 sp_[i].y = mm_.y + mm_.height/2;
                 sp_[i].decay = defaultDecay_ + random(-2, 3);
-                sp_[i].color = c_.darkgray;
-                sp_[i].lastUpdateMs = lastSmokeInitMs_;
-                sp_[i].born = lastSmokeInitMs_;
-                int ageMultiplier = map(mm_.temperature, SMOKE_TEMP, IGNITION_TEMP,1,4);
-                sp_[i].maxAge = defaultMaxSmokeAge_ * ageMultiplier;
+                sp_[i].lastUpdateMs = lastParticleInitMs_;
+                sp_[i].born = lastParticleInitMs_;
+                int ageMultiplier = map(mm_.temperature, PARTICLE_START_TEMP, IGNITION_TEMP,1,4);
+                sp_[i].maxAge = defaultMaxAge_ * ageMultiplier;
+
+                if(type == ParticleType::Smoke) {
+                    sp_[i].color = c_.darkgray;
+                }
+
+                if(type == ParticleType::Spark) {
+                    sp_[i].vy = 40;
+                    sp_[i].vx = random(-15,16);
+                    sp_[i].maxAge = 500;
+                    sp_[i].color = flameColors_[random(0,2)];
+                }
+
                 break;
             }
         }
     }
 }
 
-void MarshmallowRoastScene::updateSmoke() {
-    for (int i = 0; i < NUM_SMOKE_PARTICLES; i++) {
+void MarshmallowRoastScene::updateParticle() {
+    for (int i = 0; i < NUM_PARTICLES; i++) {
         if(sp_[i].active) {
             uint32_t now = millis();
             float dt_s = static_cast <float>(now - sp_[i].lastUpdateMs)/1000.0;  //dt in sec
@@ -362,7 +455,6 @@ void MarshmallowRoastScene::updateSmoke() {
             sp_[i].color.r = (r > sp_[i].decay) ? (r - sp_[i].decay) : 0;
             sp_[i].color.g = (g > sp_[i].decay) ? (g - sp_[i].decay) : 0;
             sp_[i].color.b = (b > sp_[i].decay) ? (b - sp_[i].decay) : 0;
-
             if(now - sp_[i].born > sp_[i].maxAge) {
                 sp_[i].active = false;
             }
@@ -371,10 +463,8 @@ void MarshmallowRoastScene::updateSmoke() {
 }
 
 void MarshmallowRoastScene::renderSmoke(PixelFramebuffer& fb) {
-    for (int i = 0; i < NUM_SMOKE_PARTICLES; i++) {
+    for (int i = 0; i < NUM_PARTICLES; i++) {
         if(sp_[i].active) {
-            //graphics_.writePixel(fb.data(), sp_[i].x, sp_[i].y, sp_[i].color);
-
             int length = 2;
             if(sp_[i].y <= ROWS - length) {
                 graphics_.drawLine(fb.data(), sp_[i].x, sp_[i].y,sp_[i].x, sp_[i].y+length-1, 1, sp_[i].color);
@@ -394,6 +484,6 @@ void MarshmallowRoastScene::drawCentered(PixelFramebuffer& fb, const char* text,
     graphics_.drawString(fb.data(), text, (PANEL_WIDTH - 6 * len) / 2, y, color, {0, 0, 0});
 }
 
-MarshmallowRoastScene::SmokeParticle& MarshmallowRoastScene::getSmokeParticle(int i) {
+MarshmallowRoastScene::Particle& MarshmallowRoastScene::getParticle(int i) {
     return sp_[i];
 }

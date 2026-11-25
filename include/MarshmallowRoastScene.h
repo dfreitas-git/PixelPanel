@@ -27,6 +27,7 @@ public:
 
 private:
     enum class State { Roasting, Result, Burned };
+    enum class ParticleType { Smoke, Spark };
 
     GraphicsPrimitives& graphics_;
     palette c_;
@@ -52,6 +53,7 @@ private:
     struct Marshmallow {
         float x;
         float y;
+        float vy;
         float width;
         float height;
         float angle;      // radians
@@ -62,6 +64,7 @@ private:
     Marshmallow mm_ = {
         stick_.endX,
         stick_.endY,
+        0.0,
         6.0f,
         6.0f,
         stick_.angle,      // radians
@@ -76,38 +79,47 @@ private:
         float bf;
     };
 
-    struct SmokeParticle {
+    struct Particle {
         float x = 0.0f;
         float y = 0.0f;
         float vx = 0.0f;
-        float vy = 10.0;
+        float vy = defaultVy_;
         uint32_t born = 0;
         uint32_t lastUpdateMs;
-        uint16_t maxAge = defaultMaxSmokeAge_;
+        uint16_t maxAge = defaultMaxAge_;
         bool  active = false;
         uint8_t decay = defaultDecay_;
         RGB   color;
     };
 
-    static constexpr uint16_t defaultMaxSmokeAge_ = 2000;
+    static constexpr uint16_t defaultMaxAge_ = 2000;
+    static constexpr float defaultVy_ = 10.0;
     static constexpr uint16_t defaultDecay_ = 4;
-    static constexpr uint8_t NUM_SMOKE_PARTICLES = 50;
+    static constexpr uint8_t NUM_PARTICLES = 160;
     static constexpr float IGNITION_DELAY = .75f;  // sec
-    SmokeParticle sp_[NUM_SMOKE_PARTICLES];
-    SmokeParticle& getSmokeParticle(int i);
+    Particle sp_[NUM_PARTICLES];
+    Particle& getParticle(int i);
+
+    bool marshmallowFalling_ = false;  // true when the burning marshmallow is falling into the fire
+    bool marshmallowBurned_ = false;
 
     State state_ = State::Roasting;
+    ParticleType type_ = ParticleType::Smoke;
     uint32_t stateStartMs_ = 0;
     uint32_t lastRenderMs_ = 0;
     uint32_t lastPhysicsMs_ = 0;
     uint32_t lastFireMs_ = 0;
-    uint32_t lastSmokeMs_ = 0;
-    uint32_t lastSmokeInitMs_ = 0;
+    uint32_t lastParticleMs_ = 0;
+    uint32_t lastParticleInitMs_ = 0;
     float ignitionTime_ = 0.0; // in seconds
+    bool sparksInited_ = false;
+    uint32_t sparkStartMs_ = 0;
+    static constexpr uint32_t SPARK_PERIOD = 500;  //ms amount of time to generate sparks
+    static constexpr uint32_t SPARKS_DONE = 1500;  //ms  time after sparks start before game over.
 
     uint16_t const RENDER_PERIOD_MS = 20;
     uint16_t const FIRE_PERIOD_MS = 50;
-    uint16_t const SMOKE_PERIOD_MS = 30;
+    uint16_t const PARTICLE_PERIOD_MS = 30;
 
     uint32_t roundStartMs = 0;
     int roundTimeMs_ = 0; 
@@ -120,8 +132,9 @@ private:
     void updateFire();
     void updateMarshmallow(float dt);
     void updateStick();
-    void initSmoke();
-    void updateSmoke();
+    void initParticle(ParticleType type);
+    void updateParticle();
+    void updateBurned(float dt);
     void burnMarshmallow();
 
     int rXoff(int x, int range);
@@ -145,6 +158,7 @@ private:
     RGB lerpColor(const RGB& a, const RGB& b, float t);
     void renderFire(PixelFramebuffer& fb);
     void renderMarshmallow(PixelFramebuffer& fb);
+    void renderBurned(PixelFramebuffer& fb);
     void renderStick(PixelFramebuffer& fb);
     void renderSmoke(PixelFramebuffer& fb);
     void renderScore(PixelFramebuffer& fb);
@@ -161,6 +175,8 @@ private:
     static constexpr float COOKING_THRESHOLD = 80.0f; 
     static constexpr float COOKING_RATE = 0.15f; 
     static constexpr float IGNITION_TEMP = 180.0f; // degrees-c
-    static constexpr float SMOKE_TEMP  =   100.0f; // degrees-c
+    static constexpr float PARTICLE_START_TEMP  =   100.0f; // degrees-c
+    static constexpr float DROP_HEIGHT  =   20.0f; // pixels
+    static constexpr float DROP_RATE    =   40.0f; // pixels/s
 
 };
