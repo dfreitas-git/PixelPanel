@@ -17,8 +17,8 @@ void MarshmallowRoastScene::begin() {
 }
 
 void MarshmallowRoastScene::onSingleClick() { 
-    if(state_ == State::Result || state_ == State::Burned ) {
-            startNewGame(); 
+    if(state_ == State::Result ) {
+        startNewGame(); 
     }
 }
 
@@ -81,9 +81,10 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
     }
 
     if (state_ == State::Burned) {
+        updateBurned(dt);
+
         if (now - lastParticleMs_ >= PARTICLE_PERIOD_MS) {
             lastParticleMs_=now;
-            updateBurned(dt);
             updateParticle();
         }
     }
@@ -101,7 +102,7 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
             renderStick(fb);
             renderMarshmallow(fb);
             renderFire(fb);
-            renderSmoke(fb);
+            renderParticles(fb);
             break;
 
         case State::Result :
@@ -112,7 +113,7 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
             renderStick(fb);
             renderBurned(fb);
             renderFire(fb);
-            renderSmoke(fb);
+            renderParticles(fb);
             break;
     }
 }
@@ -334,7 +335,6 @@ void MarshmallowRoastScene::renderMarshmallow(PixelFramebuffer& fb) {
 }
 
 void MarshmallowRoastScene::updateBurned(float dt) {
-    mm_.temperature = IGNITION_TEMP;
     if(!sparksInited_) {
         initParticle(ParticleType::Smoke);
     }
@@ -348,12 +348,12 @@ void MarshmallowRoastScene::updateBurned(float dt) {
             mm_.vy = 0.0f;
         }
     } else {
-        mm_.vy -= DROP_RATE * dt;
+        mm_.vy -= DROP_ACCELERATION * dt;
         mm_.y += mm_.vy * dt;
         if(mm_.y <= COAL_Y)
             mm_.y = 0.0;
     }
-    if(mm_.y <= COAL_Y) {
+    if (marshmallowFalling_ && mm_.y <= COAL_Y) {
 
         // init a bunch of smoke colored like sparks to float up
         if(!sparksInited_) {
@@ -403,9 +403,16 @@ void MarshmallowRoastScene::updateStick() {
 
 void MarshmallowRoastScene::initParticle(ParticleType type) {
 
-    // Stagger particles to create a cloud effect. More when the marahmallow temperature rises
-    float particleMultiplier = map(mm_.temperature, PARTICLE_START_TEMP, IGNITION_TEMP,36,6) / 6.0;
-    uint32_t spawnTime = constrain(PARTICLE_PERIOD_MS * particleMultiplier, PARTICLE_PERIOD_MS, PARTICLE_PERIOD_MS * 6);
+    uint32_t spawnTime;
+
+    if (type == ParticleType::Spark) {
+        // These are impact sparks not dependent on marshmallow temperature
+        spawnTime = PARTICLE_PERIOD_MS;
+    } else {
+        // Stagger particles to create a cloud effect. More when the marahmallow temperature rises
+        float particleMultiplier = map(mm_.temperature, PARTICLE_START_TEMP, IGNITION_TEMP,36,6) / 6.0;
+        spawnTime = constrain(PARTICLE_PERIOD_MS * particleMultiplier, PARTICLE_PERIOD_MS, PARTICLE_PERIOD_MS * 6);
+    }
 
     if(millis() - lastParticleInitMs_ > spawnTime) {
         lastParticleInitMs_ = millis();
@@ -426,15 +433,16 @@ void MarshmallowRoastScene::initParticle(ParticleType type) {
 
                 if(type == ParticleType::Smoke) {
                     sp_[i].color = c_.darkgray;
+                    sp_[i].vx = 0.0f;
+                    sp_[i].vy = defaultVy_;
                 }
 
                 if(type == ParticleType::Spark) {
-                    sp_[i].vy = 40;
+                    sp_[i].vy = 40.0f;
                     sp_[i].vx = random(-15,16);
                     sp_[i].maxAge = 500;
                     sp_[i].color = flameColors_[random(0,2)];
                 }
-
                 break;
             }
         }
@@ -462,7 +470,7 @@ void MarshmallowRoastScene::updateParticle() {
     }
 }
 
-void MarshmallowRoastScene::renderSmoke(PixelFramebuffer& fb) {
+void MarshmallowRoastScene::renderParticles(PixelFramebuffer& fb) {
     for (int i = 0; i < NUM_PARTICLES; i++) {
         if(sp_[i].active) {
             int length = 2;
@@ -482,8 +490,4 @@ void MarshmallowRoastScene::drawCentered(PixelFramebuffer& fb, const char* text,
     int len = 0;
     while (text[len] != '\0') ++len;
     graphics_.drawString(fb.data(), text, (PANEL_WIDTH - 6 * len) / 2, y, color, {0, 0, 0});
-}
-
-MarshmallowRoastScene::Particle& MarshmallowRoastScene::getParticle(int i) {
-    return sp_[i];
 }

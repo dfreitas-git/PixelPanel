@@ -9,10 +9,10 @@
    The game is simple, the user controls the height of a marshmallow on a stick.
    The campfire is at the bottom of the screen.  The user has to roast the  
    marshmallow to the perfect doneness without having it catch on fire and drop 
-   into the fire.  Score is based on how close to perfectly done it is in the 
-   minimum amount of time.   User pushes the click button to start a new round ant
-   to stop roasting in the current round.  A game twist is that the fire can occasionally 
-   flare up requiring them to pull the marshmallow up or risk setting it on fire.
+   into the fire.  Time is the score.  The lower the time the better.  User pushes 
+   the click button to start a new round.  The round ends with either the marshmallow
+   reaches 100% doneness or the marshmallow burns.  A game twist is that the fire can 
+   occasionally flare up requiring them to pull the marshmallow up or risk setting it on fire.
  */
 
 class MarshmallowRoastScene : public Scene {
@@ -56,7 +56,6 @@ private:
         float vy;
         float width;
         float height;
-        float angle;      // radians
         float temperature;
         float doneness;
     };
@@ -67,7 +66,6 @@ private:
         0.0,
         6.0f,
         6.0f,
-        stick_.angle,      // radians
         0.0f,
         0.0f
     };
@@ -98,13 +96,11 @@ private:
     static constexpr uint8_t NUM_PARTICLES = 160;
     static constexpr float IGNITION_DELAY = .75f;  // sec
     Particle sp_[NUM_PARTICLES];
-    Particle& getParticle(int i);
 
     bool marshmallowFalling_ = false;  // true when the burning marshmallow is falling into the fire
     bool marshmallowBurned_ = false;
 
     State state_ = State::Roasting;
-    ParticleType type_ = ParticleType::Smoke;
     uint32_t stateStartMs_ = 0;
     uint32_t lastRenderMs_ = 0;
     uint32_t lastPhysicsMs_ = 0;
@@ -160,7 +156,7 @@ private:
     void renderMarshmallow(PixelFramebuffer& fb);
     void renderBurned(PixelFramebuffer& fb);
     void renderStick(PixelFramebuffer& fb);
-    void renderSmoke(PixelFramebuffer& fb);
+    void renderParticles(PixelFramebuffer& fb);
     void renderScore(PixelFramebuffer& fb);
     void drawCentered(PixelFramebuffer& fb, const char* text, int y, RGB color);
     void fillRectSprite(RGB color);
@@ -177,6 +173,6 @@ private:
     static constexpr float IGNITION_TEMP = 180.0f; // degrees-c
     static constexpr float PARTICLE_START_TEMP  =   100.0f; // degrees-c
     static constexpr float DROP_HEIGHT  =   20.0f; // pixels
-    static constexpr float DROP_RATE    =   40.0f; // pixels/s
+    static constexpr float DROP_ACCELERATION    =   40.0f; // pixels/sec*sec
 
 };
