@@ -45,6 +45,9 @@ void MarshmallowRoastScene::startNewGame() {
     mm_.doneness = 0.0f;
     mm_.temperature = AMBIENT_TEMP;
     mmColor_ = c_.white;
+    fireIntensity_ = 1.0f;
+    flareActive_ = false;
+    nextFlareMs_ = millis() + random(3000, 6000);
     initExtraBrowning();
 
     // Reset any still active particles
@@ -71,7 +74,9 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
 
     updateStick();
 
+
     if (state_ == State::Roasting) {
+        updateFlare(now);
         updateMarshmallow(dt);
          
         if (now - lastParticleMs_ >= PARTICLE_PERIOD_MS) {
@@ -120,6 +125,7 @@ void MarshmallowRoastScene::render(PixelFramebuffer& fb) {
 
 void MarshmallowRoastScene::burnMarshmallow() {
     marshmallowBurned_ = true;
+    fireIntensity_ = 1.0f;
     enter(State::Burned);
 }
 
@@ -161,11 +167,12 @@ void MarshmallowRoastScene::updateFire() {
         flame_[i].v1x = rXoff(i*3-1,2);
         flame_[i].v1y = 0;
         flame_[i].v2x = rXoff(i*3+1,2);
-        if(i == 3 || i == 5 || i == 6 || i == 7) {
-            flame_[i].v2y = rYoff(8,3);
-        } else {
-            flame_[i].v2y = rYoff(5,2);
-        }
+
+        int baseHeight = (i == 3 || i == 5 || i == 6 || i == 7) ? 8 : 5;
+        int height = rYoff(baseHeight, 3);
+        float flameHeightScale = 1.0f + 0.5f * (fireIntensity_ - 1.0f);
+        flame_[i].v2y = constrain( int(height * flameHeightScale), 0, ROWS - 1);
+
         flame_[i].v3x = rXoff(i*3+3,2);
         flame_[i].v3y = 0;
         flame_[i].color = flameColors_[random(2)];
@@ -490,4 +497,39 @@ void MarshmallowRoastScene::drawCentered(PixelFramebuffer& fb, const char* text,
     int len = 0;
     while (text[len] != '\0') ++len;
     graphics_.drawString(fb.data(), text, (PANEL_WIDTH - 6 * len) / 2, y, color, {0, 0, 0});
+}
+
+void MarshmallowRoastScene::updateFlare(uint32_t now) {
+    constexpr uint32_t RISE_MS = 200;
+    constexpr uint32_t HOLD_MS = 600;
+    constexpr uint32_t FALL_MS = 1000;
+
+    if (!flareActive_) {
+        fireIntensity_ = 1.0f;
+
+        if (now >= nextFlareMs_) {
+            flareActive_ = true;
+            flareStartMs_ = now;
+        }
+        return;
+    }
+
+    uint32_t elapsed = now - flareStartMs_;
+
+    if (elapsed < RISE_MS) {
+        float t = float(elapsed) / RISE_MS;
+        fireIntensity_ = 1.0f + (FLARE_PEAK_INTENSITY - 1.0f) * t;
+    }
+    else if (elapsed < RISE_MS + HOLD_MS) {
+        fireIntensity_ = FLARE_PEAK_INTENSITY;
+    }
+    else if (elapsed < RISE_MS + HOLD_MS + FALL_MS) {
+        float t = float(elapsed - RISE_MS - HOLD_MS) / FALL_MS;
+        fireIntensity_ = FLARE_PEAK_INTENSITY - (FLARE_PEAK_INTENSITY - 1.0f) * t;
+    }
+    else {
+        fireIntensity_ = 1.0f;
+        flareActive_ = false;
+        nextFlareMs_ = now + random(FLARE_MIN_INTERVAL_MS, FLARE_MAX_INTERVAL_MS);
+    }
 }

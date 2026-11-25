@@ -107,6 +107,10 @@ private:
     uint32_t lastFireMs_ = 0;
     uint32_t lastParticleMs_ = 0;
     uint32_t lastParticleInitMs_ = 0;
+    uint32_t nextFlareMs_ = 0;
+    uint32_t flareStartMs_ = 0;
+    bool flareActive_ = false;
+
     float ignitionTime_ = 0.0; // in seconds
     bool sparksInited_ = false;
     uint32_t sparkStartMs_ = 0;
@@ -130,6 +134,7 @@ private:
     void updateStick();
     void initParticle(ParticleType type);
     void updateParticle();
+    void updateFlare(uint32_t now);
     void updateBurned(float dt);
     void burnMarshmallow();
 
@@ -174,5 +179,11 @@ private:
     static constexpr float PARTICLE_START_TEMP  =   100.0f; // degrees-c
     static constexpr float DROP_HEIGHT  =   20.0f; // pixels
     static constexpr float DROP_ACCELERATION    =   40.0f; // pixels/sec*sec
+
+    static constexpr uint32_t FLARE_MIN_INTERVAL_MS = 1000;
+    static constexpr uint32_t FLARE_MAX_INTERVAL_MS = 4000;
+    static constexpr uint32_t FLARE_DURATION_MS = 800;
+    static constexpr uint32_t FLARE_RECOVERY_MS = 1000;
+    static constexpr float FLARE_PEAK_INTENSITY = 3.5f;
 
 };
