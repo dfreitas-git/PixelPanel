@@ -130,8 +130,8 @@ void applyMenuAction(const MenuAction& action)
     }
 }
 
-void setup()
-{
+void setup() {
+
     Serial.begin(115200);
 
      // Wait for USB serial connection (min 2 seconds, max 5) so serial prints show up...
@@ -165,29 +165,29 @@ void setup()
         }
     }
 
-    // Register the scenes and select the default
-    panelController.addScene(shootingStarsScene);      // index0
-    panelController.addScene(fireworksScene);          // index1
-    panelController.addScene(checkerBoardScene);       // index2
-    panelController.addScene(eyeballScene);            // index3
-    panelController.addScene(pacman1Scene);            // index4
-    panelController.addScene(reflectingPondScene);     // index5
-    panelController.addScene(oscilloscopeScene);       // index6
-    panelController.addScene(archimedeanSpiralScene);  // index7
+    // Register the scenes and select the default.  They are indexed 
+    // in the order that they are defined below (index0 - indexN)
+    panelController.addScene(checkerBoardScene);
+    panelController.addScene(eyeballScene);
+    panelController.addScene(shootingStarsScene);
+    panelController.addScene(pacman1Scene);
+    panelController.addScene(reflectingPondScene);
+    panelController.addScene(oscilloscopeScene);
+    panelController.addScene(archimedeanSpiralScene);
+    panelController.addScene(fireworksScene);
 
     panelController.addGames(collidingPixelsScene);    // games index0
     panelController.addGames(marshmallowRoastScene);    // games index0
 
-    panelController.selectScene(0);   // Start with shootingStars
-    panelController.selectGames(0);   // For Games, start with ColligingPixels
+    panelController.selectScene(0);
+    panelController.selectGames(0);
 
     framebuffer.clear();
     pixelOutput.show( framebuffer, panelController.getBrightnessScale());
 
 }
 
-void loop()
-{
+void loop() {
 
      // For profile printing
      static uint32_t lastReport = millis();
@@ -257,7 +257,8 @@ void loop()
     }
 
     // Diffuser: menus require focus; running scenes use their requested blur + user offset.
-    const int requestedDiffuserPosition = runningScene ?  panelController.getSceneDiffuserPosition() + panelController.getDiffuserOffset() : 0;
+    const int requestedDiffuserPosition = runningScene ?  
+                     panelController.getSceneDiffuserPosition() + panelController.getDiffuserOffset() : 0;
 
     if(DEBUG_PRINT == 2) {
         static uint32_t lastPrint = 0;
