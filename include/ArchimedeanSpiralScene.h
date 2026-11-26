@@ -40,19 +40,4 @@ private:
     RGB rightColor_ = {0,64,0};
     RGB leftColor_ = {64,0,0};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };

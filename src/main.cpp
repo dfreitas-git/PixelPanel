@@ -1,4 +1,4 @@
-
+ 
 /* PixelPanel : ESP32 code written in the Arduino PlatformIO IDE.
 
 The code controls a 30x30 ws2812 pixel array (made up of five strips of 180 LED's each).
@@ -17,7 +17,7 @@ To add a new scene do the following:
     1) Create  SceneName.h (or copy an existing one as a template)
         - Edit/add class name
         - instantiate private settings{}
-        - Update name() method with menu name
+        - Update name() method with mens name
     2) Create ScemeName.cpp (or copy an existing one as a template)
         - Edit/add processPose code,
         - Edit/add processGesture code
@@ -60,6 +60,8 @@ dlf  9/22/2026
 #include "OscilloscopeScene.h"
 #include "ArchimedeanSpiralScene.h"
 #include "MarshmallowRoastScene.h"
+#include "PixelMarblesScene.h"
+#include "MarbleEngine.h"
 
 
 PanelRadio panelRadio;
@@ -85,6 +87,7 @@ Pacman1Scene pacman1Scene(gAnim);
 ReflectingPondScene reflectingPondScene;
 OscilloscopeScene oscilloscopeScene(gPrim);
 ArchimedeanSpiralScene archimedeanSpiralScene(gPrim);
+PixelMarblesScene pixelMarblesScene(gPrim);
 
 // test scenes
 TestScene testScene(testPanel);
@@ -175,6 +178,7 @@ void setup() {
     panelController.addScene(oscilloscopeScene);
     panelController.addScene(archimedeanSpiralScene);
     panelController.addScene(fireworksScene);
+    panelController.addScene(pixelMarblesScene);
 
     panelController.addGames(collidingPixelsScene);    // games index0
     panelController.addGames(marshmallowRoastScene);    // games index0

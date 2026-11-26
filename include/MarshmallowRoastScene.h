@@ -28,6 +28,7 @@ public:
 private:
     enum class State { Roasting, Result, Burned };
     enum class ParticleType { Smoke, Spark };
+    void updateMarble(int index, float dt);
 
     GraphicsPrimitives& graphics_;
     palette c_;

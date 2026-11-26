@@ -1,0 +1,54 @@
+#pragma once
+#include <Arduino.h>
+#include "Scene.h"
+#include "graphicsPrimitives.h"
+#include "MarbleEngine.h"
+
+/*
+    PixelMarblesScene
+    Scene behavior and presentation
+    Wand pose interpretation
+    Board selection and initialization
+    Initial marble distribution and colors
+    Physics update scheduling
+    Framebuffer rendering
+    Button and gesture handling
+*/
+
+class PixelMarblesScene : public Scene {
+public:
+    explicit PixelMarblesScene(GraphicsPrimitives& graphics) : graphics_(graphics) {}
+    const char* name() const override { return "MARBL"; }
+    void begin() override;
+    void onSingleClick() override;
+    void processPose(const WandPacket& packet) override;
+    void render(PixelFramebuffer& framebuffer) override;
+    int preferredDiffuserPosition() const override { return 0; }
+
+private:
+    palette c_;
+    GraphicsPrimitives& graphics_;
+    MarbleEngine marbleEngine_;
+
+    // Desired number of marbles for this scene.
+    // Must not exceed MarbleEngine MAX_MARBLES storage capacity.
+    static constexpr int NUM_MARBLES = 120;
+    static_assert(NUM_MARBLES <= MarbleEngine::getMaxMarbles(),
+              "Scene marble count exceeds engine capacity");
+
+    RGB marbleColors_[5] = {c_.red, c_.green, c_.blue, c_.yellow, c_.purple};
+    static constexpr float MAX_TILT = PI / 6.0f;
+    static constexpr float TILT_DEADBAND = 3.0f * PI / 180.0f;
+    float applyDeadband(float angle) const;
+    //static constexpr float GRAVITY = 40.0f;
+    //static constexpr float GRAVITY = 80.0f;
+    static constexpr float GRAVITY = 120.0f;
+    uint16_t const RENDER_PERIOD_MS = 20;
+    static constexpr uint32_t PHYSICS_PERIOD_MS = 10;
+    uint32_t lastPhysicsMs_ = 0;
+    uint32_t lastRenderMs_ = 0;
+    void initializeBoard();
+    void initializeMarbles();
+    void renderBoard(PixelFramebuffer& framebuffer);
+    void renderMarbles(PixelFramebuffer& framebuffer);
+};
