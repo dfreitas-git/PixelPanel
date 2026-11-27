@@ -1,5 +1,6 @@
 
 #include "MarbleEngine.h"
+#include <algorithm>
 
     void MarbleEngine::reset() {
 
@@ -67,6 +68,64 @@
         }
     }
 
+    /* gravity sorting
+    void MarbleEngine::update(float dt) {
+
+        int order[MAX_MARBLES];
+    
+        // Initialize processing order
+        for (int i = 0; i < marbleCount_; i++) {
+            order[i] = i;
+        }
+    
+        // Sort marbles from furthest downhill to furthest uphill.
+        // We're using the dot product of each marble's position and 
+        // the gravity vector to establish its processing priority.
+        // P=xg_x+yg_y
+        // The larger the priority, the further downhill the marble is.
+
+        std::sort(order, order + marbleCount_,
+            [this](int a, int b) {
+    
+                float priorityA = marbles_[a].x * gravityX_ +
+                                  marbles_[a].y * gravityY_;
+    
+                float priorityB = marbles_[b].x * gravityX_ +
+                                  marbles_[b].y * gravityY_;
+    
+                return priorityA > priorityB;
+            });
+    
+        // Update marbles in sorted order
+        for (int i = 0; i < marbleCount_; i++) {
+            updateMarble(order[i], dt);
+        }
+    }
+    */
+
+    /*  random indexing
+    void MarbleEngine::update(float dt) {
+
+        int order[MAX_MARBLES];
+    
+        // Initialize processing order
+        for (int i = 0; i < marbleCount_; i++) {
+            order[i] = i;
+        }
+    
+        // Randomize processing order (Fisher-Yates shuffle)
+        for (int i = marbleCount_ - 1; i > 0; i--) {
+            int j = random(i + 1);
+            std::swap(order[i], order[j]);
+        }
+    
+        // Update marbles in randomized order
+        for (int i = 0; i < marbleCount_; i++) {
+            updateMarble(order[i], dt);
+        }
+    }
+   */
+
     void MarbleEngine::updateMarble(int index, float dt) {
 
         Marble& m = marbles_[index];
@@ -113,7 +172,8 @@
             m.x = nextX;
     
         } else {
-            m.vx = 0.0f;
+            //m.vx = 0.0f;
+            m.vx *= COLLISION_RETENTION;
         }
     
         // -------------------------------------------------
@@ -134,7 +194,8 @@
             m.y = nextY;
     
         } else {
-            m.vy = 0.0f;
+            //m.vy = 0.0f;
+            m.vy *= COLLISION_RETENTION;
         }
     }
 

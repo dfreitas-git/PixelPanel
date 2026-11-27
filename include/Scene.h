@@ -14,7 +14,8 @@ public:
     virtual void begin() {}
 
     // virtual void processPose(...) {} says that every scene may override processPose(). 
-    // If a particular scene doesn't need pose information, the empty base-class implementation is perfectly acceptable.
+    // If a particular scene doesn't need pose information, the empty base-class implementation 
+    // is perfectly acceptable.
     // virtual void render(...) = 0; says that every concrete scene must provide its own 
     // implementation of render(). This is called a pure virtual function.
 

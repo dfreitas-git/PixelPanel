@@ -7,18 +7,34 @@ void PixelMarblesScene::begin() {
     lastRenderMs_ = now;
     lastPhysicsMs_ = now;
     marbleEngine_.reset();
+    yawInitialized_ = false;
     initializeMarbles();
 }
 
 void PixelMarblesScene::onSingleClick() {
-
+    yawInitialized_ = false;
 }
 
 void PixelMarblesScene::processPose(const WandPacket& packet) {
 
+     if (!yawInitialized_) {
+        initialYaw_ = packet.yaw;
+        yawInitialized_ = true;
+    }
+
+    float relativeYaw = packet.yaw - initialYaw_;
+
+    // Handle angular wraparound
+    while (relativeYaw > PI)
+        relativeYaw -= 2.0f * PI;
+
+    while (relativeYaw < -PI)
+        relativeYaw += 2.0f * PI;
+
     // So we don't apply board angle around neutral wand position
     float fbAngle = applyDeadband(packet.pitch);
-    float lrAngle = applyDeadband(packet.roll);
+    //float lrAngle = applyDeadband(packet.roll);
+    float lrAngle = applyDeadband(relativeYaw);
 
     float gx = GRAVITY * sinf(lrAngle);
     float gy = GRAVITY * sinf(fbAngle);
@@ -27,8 +43,8 @@ void PixelMarblesScene::processPose(const WandPacket& packet) {
 }
 
 void PixelMarblesScene::initializeMarbles() {
-    for (int y=0; y< ROWS; y++) {
-        for (int x=0; x< COLUMNS; x++) {
+    for (int y=0; y< ROWS; y+=2) {
+        for (int x=0; x< COLUMNS; x+=2) {
             marbleEngine_.addMarble( x, y,
                 marbleColors_[random( 0, sizeof(marbleColors_) / sizeof(marbleColors_[0]))]
             );

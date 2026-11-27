@@ -30,6 +30,9 @@ private:
     GraphicsPrimitives& graphics_;
     MarbleEngine marbleEngine_;
 
+    bool yawInitialized_ = false;
+    float initialYaw_ = 0.0f;
+
     // Desired number of marbles for this scene.
     // Must not exceed MarbleEngine MAX_MARBLES storage capacity.
     static constexpr int NUM_MARBLES = 120;
@@ -40,11 +43,11 @@ private:
     static constexpr float MAX_TILT = PI / 6.0f;
     static constexpr float TILT_DEADBAND = 3.0f * PI / 180.0f;
     float applyDeadband(float angle) const;
-    //static constexpr float GRAVITY = 40.0f;
-    //static constexpr float GRAVITY = 80.0f;
     static constexpr float GRAVITY = 120.0f;
     uint16_t const RENDER_PERIOD_MS = 20;
     static constexpr uint32_t PHYSICS_PERIOD_MS = 10;
+    static_assert( MarbleEngine::getMaxVelocity() * (PHYSICS_PERIOD_MS / 1000.0f) <= 1.0f,
+               "Max marble displacement exceeds one pixel per physics cycle");
     uint32_t lastPhysicsMs_ = 0;
     uint32_t lastRenderMs_ = 0;
     void initializeBoard();

@@ -37,6 +37,9 @@ public:
     static constexpr int getMaxMarbles() {
         return MAX_MARBLES;
     }
+    static constexpr float getMaxVelocity() {
+        return MAX_VELOCITY;
+    }
 
 
 private:
@@ -47,15 +50,13 @@ private:
     Marble marbles_[MAX_MARBLES];
     int marbleCount_ = 0;
 
-    //static constexpr float DRAG = 1.0f;
     static constexpr float DRAG = 0.5f;
     static constexpr float MIN_VELOCITY = 0.1f;
-    //static constexpr float MAX_VELOCITY = 25.0f;
-    //static constexpr float MAX_VELOCITY = 50.0f;
     static constexpr float MAX_VELOCITY = 75.0f;
     float gravityX_ = 0.0f;
     float gravityY_ = 0.0f;
     int16_t occupancy_[ROWS][COLUMNS];
+    static constexpr float COLLISION_RETENTION = 0.8f;
 
     void updateMarble(int index, float dt);
 
