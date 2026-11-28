@@ -5,14 +5,22 @@
 #include "MarbleEngine.h"
 
 /*
-    PixelMarblesScene
-    Scene behavior and presentation
-    Wand pose interpretation
-    Board selection and initialization
-    Initial marble distribution and colors
+    PixelMarblesScene and MarbleEngine implement a board of marbles that roll with 
+    the tilting of the board.  Some boards have obstacles that the marbles have 
+    to roll around.  The following is what each class takes care of:
+
+    PixelMarblesScene                      MarbleEngine	                                 
+    -----------------                      ------------                                 
+    Define obstacle patterns               Store obstacle locations	                    
+    Select/initialize active pattern       Prevent movement into obstacles	             
+	Choose obstacle color                  Prevent marble initialization inside obstacle
+    Render marbles and obstacles           Clear and set obstacles	                     
+    Handle button clicks                   Provide obstacle query method	               
+    Wand pose interpretation               Compute marble velocities, locations         
     Physics update scheduling
-    Framebuffer rendering
-    Button and gesture handling
+
+    We maintain an occupancy map as our single source of truth for both marbles and obstacles
+
 */
 
 class PixelMarblesScene : public Scene {
@@ -29,6 +37,8 @@ private:
     palette c_;
     GraphicsPrimitives& graphics_;
     MarbleEngine marbleEngine_;
+
+    enum class Boards { NoObstacles, Diamond, Pegs, Baffles };
 
     bool yawInitialized_ = false;
     float initialYaw_ = 0.0f;
@@ -50,8 +60,13 @@ private:
                "Max marble displacement exceeds one pixel per physics cycle");
     uint32_t lastPhysicsMs_ = 0;
     uint32_t lastRenderMs_ = 0;
+    Boards currentBoard_ = Boards::NoObstacles;
     void initializeBoard();
     void initializeMarbles();
+    void drawRectObstacle(int llx, int lly, int urx, int ury);
     void renderBoard(PixelFramebuffer& framebuffer);
     void renderMarbles(PixelFramebuffer& framebuffer);
+    void initDiamond();
+    void initBaffles();
+    void initPegs();
 };

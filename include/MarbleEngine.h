@@ -27,7 +27,9 @@ public:
 
     void reset();
     void clearObstacles();
-    void setObstacle(int x, int y);
+    void clearMarbles();
+    bool setObstacle(int x, int y);
+    bool isObstacle(int x, int y) const;
 
     bool addMarble(float x, float y, RGB color);
     void setGravity(float gx, float gy);
