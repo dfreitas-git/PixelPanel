@@ -60,6 +60,9 @@ private:
     int16_t occupancy_[ROWS][COLUMNS];
     static constexpr float COLLISION_RETENTION = 0.8f;
 
+    // how much lateral velocity to add if we encounter angled edges
+    static constexpr float DEFLECTION_FACTOR = 0.3f;  
+
     void updateMarble(int index, float dt);
 
     // Occupancy map for collision avoidance

@@ -38,7 +38,7 @@ private:
     GraphicsPrimitives& graphics_;
     MarbleEngine marbleEngine_;
 
-    enum class Boards { NoObstacles, Diamond, Pegs, Baffles };
+    enum class Boards { NoObstacles, Diamond, Pegs, Baffles, Funnel };
 
     bool yawInitialized_ = false;
     float initialYaw_ = 0.0f;
@@ -69,4 +69,5 @@ private:
     void initDiamond();
     void initBaffles();
     void initPegs();
+    void initFunnel();
 };

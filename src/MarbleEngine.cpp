@@ -153,7 +153,33 @@
             m.x = nextX;
     
         } else {
-            //m.vx = 0.0f;
+
+            // Only deflect when colliding with a stationary obstacle
+            if (isObstacle(nextCellX, cellY)) {
+        
+                bool obstacleBelow =
+                    isObstacle(nextCellX, cellY - 1);
+        
+                bool obstacleAbove =
+                    isObstacle(nextCellX, cellY + 1);
+        
+                // Obstacle extends upward; deflect downward
+                if (obstacleAbove && !obstacleBelow &&
+                    isCellAvailable(cellX, cellY - 1, index) &&
+                    isCellAvailable(nextCellX, cellY - 1, index)) {
+        
+                    m.vy -= fabsf(m.vx) * DEFLECTION_FACTOR;
+                }
+        
+                // Obstacle extends downward; deflect upward
+                else if (obstacleBelow && !obstacleAbove &&
+                         isCellAvailable(cellX, cellY + 1, index) &&
+                         isCellAvailable(nextCellX, cellY + 1, index)) {
+        
+                    m.vy += fabsf(m.vx) * DEFLECTION_FACTOR;
+                }
+            }
+
             m.vx *= COLLISION_RETENTION;
         }
     
@@ -161,6 +187,7 @@
         // Attempt Y movement
         // -------------------------------------------------
     
+        m.vy = constrain(m.vy, -MAX_VELOCITY, MAX_VELOCITY);
         float nextY = m.y + m.vy * dt;
         int nextCellY = lroundf(nextY);
     
@@ -175,7 +202,30 @@
             m.y = nextY;
     
         } else {
-            //m.vy = 0.0f;
+            // look and see if we are at a diagonal edge, if so nudge it orthogonally
+            // Only deflect when colliding with a stationary obstacle
+            if (isObstacle(cellX, nextCellY)) {
+        
+                bool obstacleLeft = isObstacle(cellX - 1, nextCellY);
+                bool obstacleRight = isObstacle(cellX + 1, nextCellY);
+        
+                // Obstacle extends to the right; deflect left
+                if (obstacleRight && !obstacleLeft &&
+                    isCellAvailable(cellX - 1, cellY, index) &&
+                    isCellAvailable(cellX - 1, nextCellY, index)) {
+        
+                    m.vx -= fabsf(m.vy) * DEFLECTION_FACTOR;
+                }
+        
+                // Obstacle extends to the left; deflect right
+                else if (obstacleLeft && !obstacleRight &&
+                         isCellAvailable(cellX + 1, cellY, index) &&
+                         isCellAvailable(cellX + 1, nextCellY, index)) {
+        
+                    m.vx += fabsf(m.vy) * DEFLECTION_FACTOR;
+                }
+            }
+        
             m.vy *= COLLISION_RETENTION;
         }
     }

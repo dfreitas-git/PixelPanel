@@ -34,9 +34,13 @@ void PixelMarblesScene::onSingleClick() {
         break;
 
         case Boards::Baffles :
-            currentBoard_ = Boards:: NoObstacles;
+            currentBoard_ = Boards:: Funnel;
+            initFunnel();
         break;
 
+        case Boards::Funnel :
+            currentBoard_ = Boards:: NoObstacles;
+        break;
     }
     initializeMarbles();
 }
@@ -90,6 +94,19 @@ void PixelMarblesScene::initPegs() {
             //drawRectObstacle(x*8+5, y*8+5, x*8+8, y*8+8);
             drawRectObstacle(y%2 ? x*8+4 : x*8+8, y*8+5, y%2 ? x*8+7 : x*8+11, y*8+8);
         }
+    }
+}
+
+void PixelMarblesScene::initFunnel() {
+    for(int y=10; y<27; y++) {
+        int x = (y-10) + 1;
+        marbleEngine_.setObstacle(15+x, y);
+        marbleEngine_.setObstacle(15-x, y);
+    }
+    for(int y=8; y<10; y++) {
+        int x = 1;
+        marbleEngine_.setObstacle(15+x, y);
+        marbleEngine_.setObstacle(15-x, y);
     }
 }
 
